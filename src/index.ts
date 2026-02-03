@@ -19,7 +19,7 @@
  * node dist/index.js
  *
  * # Run with inspector for debugging
- * npx @anthropic-ai/inspector node dist/index.js
+ * npx @modelcontextprotocol/inspector node dist/index.js
  *
  * # Configure in Claude Desktop (claude_desktop_config.json)
  * {

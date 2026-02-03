@@ -21,7 +21,7 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit",
-    "inspect": "npx @anthropic-ai/inspector node dist/index.js",
+    "inspect": "npx @modelcontextprotocol/inspector node dist/index.js",
     "clean": "rm -rf dist coverage",
     "prepublishOnly": "npm run build"
   },
