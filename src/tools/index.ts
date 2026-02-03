@@ -346,7 +346,9 @@ export function registerTools(
       tool.schema as unknown as Record<string, unknown>,
       // The handler receives validated input and returns a result
       async (input: unknown) => {
-        const result = await tool.handler(input as Parameters<typeof tool.handler>[0]);
+        // Cast handler to accept unknown input since MCP SDK already validates against schema
+        const handler = tool.handler as (input: unknown) => Promise<unknown>;
+        const result = await handler(input);
 
         // Return the result formatted for MCP
         return {

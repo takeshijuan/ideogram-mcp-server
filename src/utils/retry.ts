@@ -15,9 +15,8 @@ import {
   isIdeogramMCPError,
   isRetryableError,
   extractRetryAfter,
-  type IdeogramMCPError,
 } from './error.handler.js';
-import { logger, createChildLogger } from './logger.js';
+import { createChildLogger } from './logger.js';
 
 // =============================================================================
 // Types

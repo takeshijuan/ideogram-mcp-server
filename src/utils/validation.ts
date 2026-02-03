@@ -8,7 +8,7 @@
  * - User-friendly error message formatting
  */
 
-import { z, type ZodSchema, type ZodError, type ZodIssue } from 'zod';
+import type { ZodSchema, ZodError, ZodIssue } from 'zod';
 import {
   ASPECT_RATIOS,
   VALIDATION,

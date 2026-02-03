@@ -137,7 +137,9 @@ export function createServer(options: ServerOptions = {}): McpServer {
       tool.schema as unknown as Record<string, unknown>,
       // Handler wrapper to format response for MCP
       async (input: unknown) => {
-        const result = await tool.handler(input as Parameters<typeof tool.handler>[0]);
+        // Cast handler to accept unknown input since MCP SDK already validates against schema
+        const handler = tool.handler as (input: unknown) => Promise<unknown>;
+        const result = await handler(input);
         return {
           content: [
             {
