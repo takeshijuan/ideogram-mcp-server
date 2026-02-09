@@ -76,7 +76,7 @@ import {
 /**
  * Tool name for MCP registration
  */
-export const TOOL_NAME = 'ideogram_inpaint';
+export const TOOL_NAME = 'ideogram_edit';
 
 /**
  * Tool description for MCP registration
