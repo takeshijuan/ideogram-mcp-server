@@ -5,8 +5,6 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/nienwu-kyuzan/ideogram-mcp-server?utm_source=oss&utm_medium=github&utm_campaign=nienwu-kyuzan%2Fideogram-mcp-server&labelColor=171717&color=FF570A&label=CodeRabbit+Reviews)](https://coderabbit.ai)
-[![Install in Cursor](https://img.shields.io/badge/Cursor-Install-2D2D2D?logo=cursor&logoColor=white)](https://cursor.com/install-mcp?name=ideogram&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImlkZW9ncmFtLW1jcC1zZXJ2ZXIiXSwiZW52Ijp7IklERU9HUkFNX0FQSV9LRVkiOiJ5b3VyX2FwaV9rZXlfaGVyZSJ9fQ==)
-[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install-007ACC?logo=visual-studio-code&logoColor=white)](https://marketplace.visualstudio.com/items?itemName=anthropic.claude-mcp)
 
 > **⚠️ Disclaimer**: This is an **unofficial**, community-driven project and is **not affiliated with, endorsed by, or sponsored by Ideogram AI**. For official Ideogram resources, please visit [ideogram.ai](https://ideogram.ai).
 
@@ -32,6 +30,9 @@ A production-grade **Model Context Protocol (MCP) server** that provides seamles
 - An [Ideogram API key](https://ideogram.ai/manage-api)
 
 ### Installation
+
+[![Install in Cursor](https://img.shields.io/badge/Cursor-Install-2D2D2D?logo=cursor&logoColor=white)](https://cursor.com/install-mcp?name=ideogram&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImlkZW9ncmFtLW1jcC1zZXJ2ZXIiXSwiZW52Ijp7IklERU9HUkFNX0FQSV9LRVkiOiJ5b3VyX2FwaV9rZXlfaGVyZSJ9fQ==)
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install-007ACC?logo=visual-studio-code&logoColor=white)](https://marketplace.visualstudio.com/items?itemName=anthropic.claude-mcp)
 
 ```bash
 # Clone the repository
