@@ -4,6 +4,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/nienwu-kyuzan/ideogram-mcp-server?utm_source=oss&utm_medium=github&utm_campaign=nienwu-kyuzan%2Fideogram-mcp-server&labelColor=171717&color=FF570A&label=CodeRabbit+Reviews)](https://coderabbit.ai)
 
 > **⚠️ Disclaimer**: This is an **unofficial**, community-driven project and is **not affiliated with, endorsed by, or sponsored by Ideogram AI**. For official Ideogram resources, please visit [ideogram.ai](https://ideogram.ai).
 
