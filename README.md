@@ -31,12 +31,12 @@ A production-grade **Model Context Protocol (MCP) server** that provides seamles
 
 ### Installation
 
-[![Install in Cursor](https://custom-icon-badges.demolab.com/badge/Install_in_Cursor-000000?style=for-the-badge&logo=cursor-ai-white)](https://cursor.com/en/install-mcp?name=ideogram&config=eyJ0eXBlIjoic3RkaW8iLCJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImlkZW9ncmFtLW1jcC1zZXJ2ZXIiXSwiZW52Ijp7IklERU9HUkFNX0FQSV9LRVkiOiIifX0=)
-[![Install in VS Code](https://custom-icon-badges.demolab.com/badge/Install_in_VS_Code-007ACC?style=for-the-badge&logo=vsc&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=ideogram&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22ideogram-mcp-server%22%5D%2C%22env%22%3A%7B%22IDEOGRAM_API_KEY%22%3A%22%22%7D%7D)
+[![Install in Cursor](https://custom-icon-badges.demolab.com/badge/Install_in_Cursor-000000?style=for-the-badge&logo=cursor-ai-white)](https://cursor.com/en/install-mcp?name=ideogram&config=eyJ0eXBlIjoic3RkaW8iLCJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBuaWVud3Uta3l1emFuL2lkZW9ncmFtLW1jcC1zZXJ2ZXIiXSwiZW52Ijp7IklERU9HUkFNX0FQSV9LRVkiOiIifX0=)
+[![Install in VS Code](https://custom-icon-badges.demolab.com/badge/Install_in_VS_Code-007ACC?style=for-the-badge&logo=vsc&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=ideogram&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40nienwu-kyuzan/ideogram-mcp-server%22%5D%2C%22env%22%3A%7B%22IDEOGRAM_API_KEY%22%3A%22%22%7D%7D)
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/ideogram-mcp-server.git
+git clone https://github.com/nienwu-kyuzan/ideogram-mcp-server.git
 cd ideogram-mcp-server
 
 # Install dependencies
