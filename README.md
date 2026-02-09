@@ -31,8 +31,8 @@ A production-grade **Model Context Protocol (MCP) server** that provides seamles
 
 ### Installation
 
-[![Install in Cursor](https://img.shields.io/badge/Cursor-Install-2D2D2D?logo=cursor&logoColor=white)](https://cursor.com/install-mcp?name=ideogram&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImlkZW9ncmFtLW1jcC1zZXJ2ZXIiXSwiZW52Ijp7IklERU9HUkFNX0FQSV9LRVkiOiJ5b3VyX2FwaV9rZXlfaGVyZSJ9fQ==)
-[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install-007ACC?logo=visual-studio-code&logoColor=white)](https://marketplace.visualstudio.com/items?itemName=anthropic.claude-mcp)
+[![Install in Cursor](https://custom-icon-badges.demolab.com/badge/Install_in_Cursor-000000?style=for-the-badge&logo=cursor-ai-white)](https://cursor.com/en/install-mcp?name=ideogram&config=eyJ0eXBlIjoic3RkaW8iLCJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImlkZW9ncmFtLW1jcC1zZXJ2ZXIiXSwiZW52Ijp7IklERU9HUkFNX0FQSV9LRVkiOiIifX0=)
+[![Install in VS Code](https://custom-icon-badges.demolab.com/badge/Install_in_VS_Code-007ACC?style=for-the-badge&logo=vsc&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=ideogram&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22ideogram-mcp-server%22%5D%2C%22env%22%3A%7B%22IDEOGRAM_API_KEY%22%3A%22%22%7D%7D)
 
 ```bash
 # Clone the repository
