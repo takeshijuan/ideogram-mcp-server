@@ -16,8 +16,6 @@ import type {
   StyleType,
   Model,
   PredictionStatus,
-  EditMode,
-  OutpaintDirection,
 } from '../types/api.types.js';
 
 // =============================================================================
@@ -35,8 +33,8 @@ export const API_BASE_URL = 'https://api.ideogram.ai' as const;
 export const API_ENDPOINTS = {
   /** V3 Generate endpoint */
   GENERATE_V3: '/v1/ideogram-v3/generate',
-  /** V3 Edit endpoint (inpainting/outpainting) */
-  EDIT_V3: '/v1/ideogram-v3/edit',
+  /** Legacy Edit endpoint (inpainting only) */
+  EDIT_LEGACY: '/edit',
   /** Legacy V2 Generate endpoint */
   GENERATE_LEGACY: '/generate',
 } as const;
@@ -119,20 +117,6 @@ export const PREDICTION_STATUSES: readonly PredictionStatus[] = [
   'cancelled',
 ] as const;
 
-/**
- * Edit mode options.
- */
-export const EDIT_MODES: readonly EditMode[] = ['inpaint', 'outpaint'] as const;
-
-/**
- * Outpaint expansion direction options.
- */
-export const OUTPAINT_DIRECTIONS: readonly OutpaintDirection[] = [
-  'left',
-  'right',
-  'up',
-  'down',
-] as const;
 
 // =============================================================================
 // Default Values
@@ -154,10 +138,6 @@ export const DEFAULTS = {
   STYLE_TYPE: 'AUTO' as StyleType,
   /** Default save locally option */
   SAVE_LOCALLY: true,
-  /** Default edit mode */
-  EDIT_MODE: 'inpaint' as EditMode,
-  /** Default expand pixels for outpainting */
-  EXPAND_PIXELS: 100,
 } as const;
 
 // =============================================================================

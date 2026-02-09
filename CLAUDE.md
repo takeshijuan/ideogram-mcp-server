@@ -63,7 +63,7 @@ npm run clean
 All 5 MVP tools are registered with the MCP server:
 - **generate.ts** - Sync image generation
 - **generate-async.ts** - Queue generation for background processing
-- **edit.ts** - Inpainting (mask-based) and outpainting (expansion)
+- **edit.ts** - Inpainting (mask-based image editing only)
 - **get-prediction.ts** - Poll async job status
 - **cancel-prediction.ts** - Cancel queued jobs
 

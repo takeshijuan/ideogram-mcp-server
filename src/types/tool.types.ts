@@ -63,7 +63,7 @@ export const RenderingSpeedSchema = z.enum([
 export const MagicPromptSchema = z.enum(['AUTO', 'ON', 'OFF']);
 
 /**
- * Style type for image generation.
+ * Style type for image generation and editing.
  */
 export const StyleTypeSchema = z.enum([
   'AUTO',
@@ -71,17 +71,14 @@ export const StyleTypeSchema = z.enum([
   'REALISTIC',
   'DESIGN',
   'FICTION',
+  'RENDER_3D',
+  'ANIME',
 ]);
 
 /**
- * Edit mode options for the edit tool.
+ * Model versions for legacy endpoints.
  */
-export const EditModeSchema = z.enum(['inpaint', 'outpaint']);
-
-/**
- * Outpaint expansion directions.
- */
-export const OutpaintDirectionSchema = z.enum(['left', 'right', 'up', 'down']);
+export const ModelSchema = z.enum(['V_2', 'V_2_TURBO']);
 
 /**
  * Prediction status for async operations.
@@ -173,35 +170,12 @@ export const EditInputSchema = z.object({
 
   /**
    * Mask image for inpainting: black=edit, white=preserve
-   * Required for inpaint mode, optional for outpaint
+   * REQUIRED for inpainting
    */
-  mask: z.string().optional(),
+  mask: z.string().min(1, 'Mask is required'),
 
-  /** Edit mode: inpaint or outpaint */
-  mode: EditModeSchema.optional().default('inpaint'),
-
-  /**
-   * For outpainting: expansion directions
-   * Multiple directions can be specified
-   */
-  expand_directions: z.array(OutpaintDirectionSchema).optional(),
-
-  /**
-   * For outpainting: number of pixels to expand
-   * Only used when expand_directions is specified
-   */
-  expand_pixels: z
-    .number()
-    .int('Expand pixels must be an integer')
-    .min(1, 'Expand pixels must be positive')
-    .max(1024, 'Expand pixels must be at most 1024')
-    .optional(),
-
-  /** Negative prompt to guide what not to include */
-  negative_prompt: z
-    .string()
-    .max(10000, 'Negative prompt must be 10000 characters or less')
-    .optional(),
+  /** Model to use for editing (V_2 or V_2_TURBO) */
+  model: ModelSchema.optional().default('V_2'),
 
   /** Number of images to generate (1-8) */
   num_images: z
@@ -219,9 +193,6 @@ export const EditInputSchema = z.object({
     .min(0, 'Seed must be non-negative')
     .max(2147483647, 'Seed must be at most 2147483647')
     .optional(),
-
-  /** Rendering speed/quality tradeoff */
-  rendering_speed: RenderingSpeedSchema.optional().default('DEFAULT'),
 
   /** Magic prompt enhancement option */
   magic_prompt: MagicPromptSchema.optional().default('AUTO'),
@@ -343,8 +314,6 @@ export interface EditOutput {
   total_cost: CostEstimateOutput;
   /** Number of images generated */
   num_images: number;
-  /** Edit mode used */
-  mode: 'inpaint' | 'outpaint';
 }
 
 /**

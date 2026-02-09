@@ -15,10 +15,8 @@ import {
   RENDERING_SPEEDS,
   MAGIC_PROMPT_OPTIONS,
   STYLE_TYPES,
-  EDIT_MODES,
-  OUTPAINT_DIRECTIONS,
 } from '../config/constants.js';
-import type { AspectRatio, RenderingSpeed, MagicPrompt, StyleType, EditMode, OutpaintDirection } from '../types/api.types.js';
+import type { AspectRatio, RenderingSpeed, MagicPrompt, StyleType } from '../types/api.types.js';
 
 // =============================================================================
 // Result Types for Safe Validation
@@ -375,19 +373,6 @@ export function isValidStyleType(value: string): value is StyleType {
   return (STYLE_TYPES as readonly string[]).includes(value);
 }
 
-/**
- * Checks if a string is a valid edit mode.
- */
-export function isValidEditMode(value: string): value is EditMode {
-  return (EDIT_MODES as readonly string[]).includes(value);
-}
-
-/**
- * Checks if a string is a valid outpaint direction.
- */
-export function isValidOutpaintDirection(value: string): value is OutpaintDirection {
-  return (OUTPAINT_DIRECTIONS as readonly string[]).includes(value);
-}
 
 // =============================================================================
 // Prompt Validation

@@ -20,7 +20,6 @@ import type {
   Prediction,
   PredictionStatus,
   GenerateRequest,
-  EditRequest,
   GenerateResponse,
   EditResponse,
 } from '../types/api.types.js';
@@ -83,7 +82,7 @@ export interface CreatePredictionOptions {
   /**
    * Request parameters for the prediction.
    */
-  request: GenerateRequest | EditRequest;
+  request: GenerateRequest;
 
   /**
    * Type of prediction (generate or edit).
@@ -771,7 +770,7 @@ export class PredictionStore {
   /**
    * Estimates the ETA for a prediction based on request parameters.
    */
-  private estimateEta(request: GenerateRequest | EditRequest): number {
+  private estimateEta(request: GenerateRequest): number {
     // Base estimate in seconds
     let eta = 30; // 30 seconds base
 

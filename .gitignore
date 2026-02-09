@@ -36,3 +36,10 @@ logs/
 .worktrees/
 .security-key
 logs/security/
+
+# Test files (temporary)
+test-*.ts
+debug-*.ts
+test-results/
+*_TEST_*.md
+error-handling-test-report.json

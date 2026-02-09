@@ -24,15 +24,10 @@ export type {
   Model,
   Resolution,
   PredictionStatus,
-  EditMode,
-  OutpaintDirection,
   // Request Types
   BaseImageRequest,
   GenerateRequest,
   LegacyGenerateRequest,
-  EditRequest,
-  GenerateFormData,
-  EditFormData,
   // Response Types
   GeneratedImage,
   GenerateResponse,
@@ -68,8 +63,7 @@ export {
   RenderingSpeedSchema,
   MagicPromptSchema,
   StyleTypeSchema,
-  EditModeSchema,
-  OutpaintDirectionSchema,
+  ModelSchema,
   PredictionStatusSchema,
   // Tool Input Schemas
   GenerateInputSchema,

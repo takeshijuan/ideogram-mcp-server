@@ -43,7 +43,7 @@ import {
   type ToolErrorOutput,
   type GeneratedImageOutput,
 } from '../types/tool.types.js';
-import type { RenderingSpeed, EditMode, OutpaintDirection } from '../types/api.types.js';
+import type { Model } from '../types/api.types.js';
 import {
   IdeogramClient,
   createIdeogramClient,
@@ -76,29 +76,29 @@ import {
 /**
  * Tool name for MCP registration
  */
-export const TOOL_NAME = 'ideogram_edit';
+export const TOOL_NAME = 'ideogram_inpaint';
 
 /**
  * Tool description for MCP registration
  */
-export const TOOL_DESCRIPTION = `Edit existing images using Ideogram AI v3 with inpainting or outpainting.
+export const TOOL_DESCRIPTION = `Edit specific parts of an existing image using inpainting with Ideogram AI.
 
-Inpainting: Edit specific parts of an image using a mask. The mask defines which areas to modify (black=edit, white=preserve).
+Inpainting uses a mask to define which areas to modify:
+- Black pixels in mask = areas to edit/regenerate
+- White pixels in mask = areas to preserve unchanged
 
-Outpainting: Expand an image in one or more directions (left, right, up, down) by generating new content that matches the original.
+The mask must be the same dimensions as the source image and contain only black and white pixels.
 
 Features:
-- Inpainting with mask-based editing
-- Outpainting with directional expansion
-- Rendering speed options: FLASH (fastest), TURBO (fast), DEFAULT (balanced), QUALITY (best quality)
+- Mask-based selective editing
 - Magic prompt enhancement to automatically improve prompts
-- Style types: AUTO, GENERAL, REALISTIC, DESIGN, FICTION
-- Generate 1-8 images per edit operation
+- Style types: AUTO, GENERAL, REALISTIC, DESIGN, FICTION, RENDER_3D, ANIME
+- Model selection: V_2 (default) or V_2_TURBO (faster)
+- Generate 1-8 variations per edit operation
 - Optional local saving of edited images
 - Cost tracking for usage monitoring
 
-Input image can be provided as a URL, base64 data URL, or file path.
-Mask image format: black=edit areas, white=preserve areas.
+Input image and mask can be provided as URLs, file paths, or base64 data URLs.
 
 Returns edited image URLs, seeds for reproducibility, and cost estimates.`;
 
@@ -188,13 +188,10 @@ export function createEditHandler(
       tool: TOOL_NAME,
       params: {
         prompt: input.prompt,
-        mode: input.mode,
         hasImage: !!input.image,
         hasMask: !!input.mask,
-        expand_directions: input.expand_directions,
-        expand_pixels: input.expand_pixels,
+        model: input.model,
         num_images: input.num_images,
-        rendering_speed: input.rendering_speed,
         magic_prompt: input.magic_prompt,
         style_type: input.style_type,
         save_locally: input.save_locally,
@@ -207,39 +204,18 @@ export function createEditHandler(
       const editParams: Parameters<typeof client.edit>[0] = {
         prompt: input.prompt,
         image: input.image,
+        mask: input.mask,
       };
 
-      // Set mode (defaults to 'inpaint')
-      const mode: EditMode = input.mode ?? 'inpaint';
-      editParams.mode = mode;
-
-      // Add mask if provided
-      if (input.mask !== undefined) {
-        editParams.mask = input.mask;
-      }
-
-      // Add outpaint-specific params
-      if (mode === 'outpaint') {
-        if (input.expand_directions !== undefined && input.expand_directions.length > 0) {
-          editParams.expandDirections = input.expand_directions as OutpaintDirection[];
-        }
-        if (input.expand_pixels !== undefined) {
-          editParams.expandPixels = input.expand_pixels;
-        }
-      }
-
-      // Add optional generation params
-      if (input.negative_prompt !== undefined) {
-        editParams.negativePrompt = input.negative_prompt;
+      // Add optional params only if defined
+      if (input.model !== undefined) {
+        editParams.model = input.model as Model;
       }
       if (input.num_images !== undefined) {
         editParams.numImages = input.num_images;
       }
       if (input.seed !== undefined) {
         editParams.seed = input.seed;
-      }
-      if (input.rendering_speed !== undefined) {
-        editParams.renderingSpeed = input.rendering_speed as RenderingSpeed;
       }
       if (input.magic_prompt !== undefined) {
         editParams.magicPrompt = input.magic_prompt;
@@ -251,10 +227,10 @@ export function createEditHandler(
       // Call Ideogram API
       const response = await client.edit(editParams);
 
-      // Calculate cost estimate (edit operations have different pricing)
+      // Calculate cost estimate (edit operations use DEFAULT speed for legacy API)
       const cost = calculateEditCost({
         numImages: response.data.length,
-        renderingSpeed: input.rendering_speed as RenderingSpeed,
+        renderingSpeed: 'DEFAULT',
       });
 
       // Process images and optionally save locally
@@ -334,7 +310,6 @@ export function createEditHandler(
         images,
         total_cost: toCostEstimateOutput(cost),
         num_images: images.length,
-        mode,
       };
 
       // Log success
@@ -348,11 +323,10 @@ export function createEditHandler(
       log.debug(
         {
           numImages: result.num_images,
-          mode: result.mode,
           creditsUsed: result.total_cost.credits_used,
           durationMs,
         },
-        'Edit completed successfully'
+        'Inpainting completed successfully'
       );
 
       return result;

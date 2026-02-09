@@ -47,14 +47,16 @@ export type RenderingSpeed = 'FLASH' | 'TURBO' | 'DEFAULT' | 'QUALITY';
 export type MagicPrompt = 'AUTO' | 'ON' | 'OFF';
 
 /**
- * Style type for image generation.
+ * Style type for image generation and editing.
  * AUTO: Let the API choose the best style
  * GENERAL: No specific style applied
  * REALISTIC: Photorealistic style
  * DESIGN: Graphic design style
  * FICTION: Fantasy/fiction style
+ * RENDER_3D: 3D rendered style (edit API only)
+ * ANIME: Anime/manga style (edit API only)
  */
-export type StyleType = 'AUTO' | 'GENERAL' | 'REALISTIC' | 'DESIGN' | 'FICTION';
+export type StyleType = 'AUTO' | 'GENERAL' | 'REALISTIC' | 'DESIGN' | 'FICTION' | 'RENDER_3D' | 'ANIME';
 
 /**
  * Ideogram model versions (for legacy V2 endpoints)
@@ -123,15 +125,6 @@ export type PredictionStatus =
   | 'failed'
   | 'cancelled';
 
-/**
- * Edit operation types
- */
-export type EditMode = 'inpaint' | 'outpaint';
-
-/**
- * Outpaint expansion directions
- */
-export type OutpaintDirection = 'left' | 'right' | 'up' | 'down';
 
 // =============================================================================
 // Request Types
@@ -179,46 +172,6 @@ export interface LegacyGenerateRequest extends BaseImageRequest {
   num_images?: number;
 }
 
-/**
- * Edit request for inpainting/outpainting (/v1/ideogram-v3/edit)
- * Image and mask are sent as separate form fields, not in image_request JSON
- */
-export interface EditRequest extends BaseImageRequest {
-  /** Edit mode: inpaint or outpaint */
-  mode?: EditMode;
-  /**
-   * For outpainting: expansion directions
-   * Multiple directions can be specified
-   */
-  expand_directions?: OutpaintDirection[];
-  /**
-   * For outpainting: number of pixels to expand
-   * Only used when expand_directions is specified
-   */
-  expand_pixels?: number;
-  /** Number of images to generate (1-8) */
-  num_images?: number;
-  /** Rendering speed/quality tradeoff */
-  rendering_speed?: RenderingSpeed;
-}
-
-/**
- * Full form data structure for generate endpoint
- * The API expects multipart/form-data with 'image_request' as JSON string
- */
-export interface GenerateFormData {
-  image_request: string; // JSON.stringify(GenerateRequest)
-}
-
-/**
- * Full form data structure for edit endpoint
- * The API expects multipart/form-data with image file, mask file, and image_request JSON
- */
-export interface EditFormData {
-  image_request: string; // JSON.stringify(EditRequest)
-  image: Buffer | Blob | string; // Image file or base64 data URL
-  mask?: Buffer | Blob | string; // Mask file (required for inpaint, optional for outpaint)
-}
 
 // =============================================================================
 // Response Types
@@ -301,7 +254,7 @@ export interface Prediction {
   /** Current status of the prediction */
   status: PredictionStatus;
   /** Original request parameters */
-  request: GenerateRequest | EditRequest;
+  request: GenerateRequest;
   /** Type of request (generate or edit) */
   type: 'generate' | 'edit';
   /** Timestamp when the prediction was created */
@@ -407,6 +360,8 @@ export const isValidStyleType = (value: string): value is StyleType => {
     'REALISTIC',
     'DESIGN',
     'FICTION',
+    'RENDER_3D',
+    'ANIME',
   ];
   return validStyles.includes(value as StyleType);
 };

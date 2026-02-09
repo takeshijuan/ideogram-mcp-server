@@ -14,7 +14,7 @@ A production-grade **Model Context Protocol (MCP) server** that provides seamles
 ## ✨ Features
 
 - **🎨 Image Generation** - Generate high-quality AI images from text prompts using Ideogram V3
-- **✏️ Image Editing** - Edit images with inpainting (mask-based) and outpainting (expansion)
+- **✏️ Image Inpainting** - Edit specific parts of images using mask-based inpainting
 - **⚡ Async Support** - Queue generation requests for background processing
 - **💰 Cost Tracking** - Estimated credit and USD costs included in all responses
 - **📁 Local Storage** - Automatically save generated images locally (URLs expire)
@@ -108,28 +108,28 @@ Generate images from text prompts.
 - Seeds for reproducibility
 - Cost estimates (credits and USD)
 
-### `ideogram_edit`
+### `ideogram_inpaint`
 
-Edit existing images with inpainting or outpainting.
+Edit specific parts of existing images using inpainting with masks.
 
 ```typescript
-// Inpainting: Edit parts of an image
+// Edit parts of an image using a mask
 {
   prompt: "Add a red balloon in the sky",
-  image: "https://example.com/photo.jpg",  // or base64 data URL
-  mask: maskImageData,  // Black=edit, White=preserve
-  mode: "inpaint"
-}
-
-// Outpainting: Expand an image
-{
-  prompt: "Continue the landscape with mountains",
-  image: originalImage,
-  mode: "outpaint",
-  expand_directions: ["left", "right"],  // up, down, left, right
-  expand_pixels: 200
+  image: "https://example.com/photo.jpg",  // URL, file path, or base64 data URL
+  mask: maskImageData,  // Black pixels=edit, White pixels=preserve
+  model: "V_2",  // or "V_2_TURBO" for faster processing
+  num_images: 1,  // Generate 1-8 variations
+  magic_prompt: "AUTO",  // AUTO, ON, or OFF
+  style_type: "AUTO"  // AUTO, GENERAL, REALISTIC, DESIGN, FICTION, RENDER_3D, ANIME
 }
 ```
+
+**Mask Requirements:**
+- Same dimensions as source image
+- Black and white pixels only (black=areas to edit, white=areas to preserve)
+- Black area must be at least 10% of total image
+- Supported formats: PNG, JPEG, WebP
 
 ### `ideogram_generate_async`
 

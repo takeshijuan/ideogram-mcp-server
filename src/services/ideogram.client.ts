@@ -26,13 +26,12 @@ import { config } from '../config/config.js';
 import type {
   GenerateRequest,
   GenerateResponse,
-  EditRequest,
   EditResponse,
   RenderingSpeed,
-  EditMode,
-  OutpaintDirection,
   AspectRatio,
   ApiErrorResponse,
+  Model,
+  StyleType,
 } from '../types/api.types.js';
 import {
   fromAxiosError,
@@ -139,13 +138,14 @@ export interface GenerateParams {
 
   /**
    * Style type for the image.
+   * Note: V3 API only supports subset of styles (no RENDER_3D or ANIME)
    * @default 'AUTO'
    */
-  styleType?: 'AUTO' | 'GENERAL' | 'REALISTIC' | 'DESIGN' | 'FICTION';
+  styleType?: StyleType;
 }
 
 /**
- * Parameters for image editing (inpainting/outpainting).
+ * Parameters for image editing (inpainting only).
  */
 export interface EditParams {
   /**
@@ -162,32 +162,15 @@ export interface EditParams {
   /**
    * The mask image for inpainting (black=edit, white=preserve).
    * Can be a URL, base64 data URL, file path, or Buffer.
-   * Required for inpainting, optional for outpainting.
+   * REQUIRED for all edit operations.
    */
-  mask?: string | Buffer;
+  mask: string | Buffer;
 
   /**
-   * Edit mode: 'inpaint' or 'outpaint'.
-   * @default 'inpaint'
+   * Model to use for editing.
+   * @default 'V_2'
    */
-  mode?: EditMode;
-
-  /**
-   * Expansion directions for outpainting.
-   * Only used when mode is 'outpaint'.
-   */
-  expandDirections?: OutpaintDirection[];
-
-  /**
-   * Number of pixels to expand for outpainting.
-   * @default 100
-   */
-  expandPixels?: number;
-
-  /**
-   * Negative prompt to guide what not to include.
-   */
-  negativePrompt?: string;
+  model?: Model;
 
   /**
    * Number of images to generate (1-8).
@@ -201,12 +184,6 @@ export interface EditParams {
   seed?: number;
 
   /**
-   * Rendering speed/quality tradeoff.
-   * @default 'DEFAULT'
-   */
-  renderingSpeed?: RenderingSpeed;
-
-  /**
    * Magic prompt enhancement option.
    * @default 'AUTO'
    */
@@ -216,7 +193,7 @@ export interface EditParams {
    * Style type for the image.
    * @default 'AUTO'
    */
-  styleType?: 'AUTO' | 'GENERAL' | 'REALISTIC' | 'DESIGN' | 'FICTION';
+  styleType?: 'AUTO' | 'GENERAL' | 'REALISTIC' | 'DESIGN' | 'FICTION' | 'RENDER_3D' | 'ANIME';
 }
 
 /**
@@ -361,9 +338,9 @@ export class IdeogramClient {
       imageRequest.seed = params.seed;
     }
 
-    // Create multipart form data
-    const formData = new FormData();
-    formData.append('image_request', JSON.stringify(imageRequest));
+    // Create JSON request body
+    // V3 API expects fields at top level, not wrapped in image_request
+    const requestBody = imageRequest;
 
     // Log request
     const requestContext: ApiRequestLogContext = {
@@ -380,7 +357,7 @@ export class IdeogramClient {
     // Execute with retry
     const response = await this.executeWithRetry<GenerateResponse>(
       endpoint,
-      formData,
+      requestBody,
       timeout,
       'generate'
     );
@@ -398,108 +375,75 @@ export class IdeogramClient {
   }
 
   /**
-   * Edits an existing image using inpainting or outpainting.
+   * Edits an existing image using inpainting.
    *
-   * Inpainting: Uses a mask to define areas to edit (black=edit, white=preserve).
-   * Outpainting: Expands the image in specified directions.
+   * Inpainting uses a mask to define which areas to edit:
+   * - Black pixels in mask = areas to modify
+   * - White pixels in mask = areas to preserve
    *
-   * @param params - Edit parameters including image, mask, and mode
+   * @param params - Edit parameters including image, mask, and prompt
    * @returns Promise resolving to the edit response with image URLs
    * @throws {IdeogramMCPError} On validation errors, API errors, or network failures
    *
    * @example
    * ```typescript
-   * // Inpainting example
-   * const inpainted = await client.edit({
-   *   prompt: 'Add a red balloon',
+   * const result = await client.edit({
+   *   prompt: 'Add a red balloon in the sky',
    *   image: 'https://example.com/photo.jpg',
-   *   mask: maskBuffer, // Black where you want changes
-   *   mode: 'inpaint',
+   *   mask: maskBuffer, // Black=edit, white=preserve
+   *   model: 'V_2',
+   *   magicPrompt: 'AUTO',
    * });
    *
-   * // Outpainting example
-   * const expanded = await client.edit({
-   *   prompt: 'Continue the landscape',
-   *   image: originalImageBuffer,
-   *   mode: 'outpaint',
-   *   expandDirections: ['left', 'right'],
-   *   expandPixels: 200,
-   * });
+   * console.log(result.data[0].url); // Edited image URL
    * ```
    */
   async edit(params: EditParams): Promise<EditResponse> {
-    const endpoint = API_ENDPOINTS.EDIT_V3;
+    const endpoint = API_ENDPOINTS.EDIT_LEGACY;
     const startTime = Date.now();
 
     // Prepare image for upload
     const preparedImage = await this.prepareImage(params.image, 'image');
 
-    // Prepare mask if provided
-    let preparedMask: PreparedImage | undefined;
-    if (params.mask !== undefined) {
-      preparedMask = await this.prepareImage(params.mask, 'mask');
-    }
+    // Prepare mask (always required for inpainting)
+    const preparedMask = await this.prepareImage(params.mask, 'mask');
 
-    // Validate inpaint mode requires mask
-    const mode = params.mode ?? DEFAULTS.EDIT_MODE;
-    if (mode === 'inpaint' && !preparedMask) {
-      throw createInvalidImageError('Inpainting requires a mask image');
-    }
-
-    // Build the image_request JSON
-    const imageRequest: EditRequest = {
-      prompt: params.prompt,
-      mode,
-      num_images: params.numImages ?? DEFAULTS.NUM_IMAGES,
-      rendering_speed: params.renderingSpeed ?? DEFAULTS.RENDERING_SPEED,
-      magic_prompt: params.magicPrompt ?? DEFAULTS.MAGIC_PROMPT,
-      style_type: params.styleType ?? DEFAULTS.STYLE_TYPE,
-    };
+    // Create multipart form data with flat fields (no JSON wrapper)
+    const formData = new FormData();
+    formData.append('prompt', params.prompt);
+    formData.append('model', params.model ?? 'V_2');
+    formData.append('magic_prompt_option', params.magicPrompt ?? DEFAULTS.MAGIC_PROMPT);
+    formData.append('num_images', String(params.numImages ?? DEFAULTS.NUM_IMAGES));
 
     // Add optional fields only if defined
-    if (params.negativePrompt !== undefined) {
-      imageRequest.negative_prompt = params.negativePrompt;
-    }
     if (params.seed !== undefined) {
-      imageRequest.seed = params.seed;
+      formData.append('seed', String(params.seed));
     }
-    if (mode === 'outpaint') {
-      if (params.expandDirections !== undefined && params.expandDirections.length > 0) {
-        imageRequest.expand_directions = params.expandDirections;
-      }
-      if (params.expandPixels !== undefined) {
-        imageRequest.expand_pixels = params.expandPixels;
-      } else {
-        imageRequest.expand_pixels = DEFAULTS.EXPAND_PIXELS;
-      }
+    if (params.styleType !== undefined) {
+      formData.append('style_type', params.styleType);
     }
 
-    // Create multipart form data
-    const formData = new FormData();
-    formData.append('image_request', JSON.stringify(imageRequest));
-    formData.append('image', preparedImage.data, {
+    // Append image and mask
+    formData.append('image_file', preparedImage.data, {
       contentType: preparedImage.contentType,
       filename: preparedImage.filename,
     });
-
-    if (preparedMask) {
-      formData.append('mask', preparedMask.data, {
-        contentType: preparedMask.contentType,
-        filename: preparedMask.filename,
-      });
-    }
+    formData.append('mask', preparedMask.data, {
+      contentType: preparedMask.contentType,
+      filename: preparedMask.filename,
+    });
 
     // Log request
     const requestContext: ApiRequestLogContext = {
       endpoint,
       method: 'POST',
       hasImage: true,
-      hasMask: !!preparedMask,
+      hasMask: true,
     };
     logApiRequest(this.log, requestContext);
 
-    // Determine timeout based on rendering speed
-    const timeout = this.getTimeoutForRenderingSpeed(params.renderingSpeed);
+    // Use default timeout (legacy API doesn't have rendering speed param)
+    const timeout = TIMEOUTS.LONG_REQUEST_MS;
 
     // Execute with retry
     const response = await this.executeWithRetry<EditResponse>(
@@ -560,21 +504,32 @@ export class IdeogramClient {
 
   /**
    * Executes an API request with automatic retry on transient failures.
+   * Supports both JSON payloads (for generate) and FormData (for edit with images).
    */
   private async executeWithRetry<T>(
     endpoint: string,
-    formData: FormData,
+    data: FormData | GenerateRequest | Record<string, unknown>,
     timeout: number,
     operationName: string
   ): Promise<T> {
     return withRetry(
       async () => {
         try {
-          const response = await this.httpClient.post<T>(endpoint, formData, {
-            headers: {
-              [API_KEY_HEADER]: this.apiKey,
-              ...formData.getHeaders(),
-            },
+          // Prepare headers based on data type
+          const headers: Record<string, string> = {
+            [API_KEY_HEADER]: this.apiKey,
+          };
+
+          // For FormData, include its headers (multipart/form-data with boundary)
+          // For JSON objects, set Content-Type to application/json
+          if (data instanceof FormData) {
+            Object.assign(headers, data.getHeaders());
+          } else {
+            headers['Content-Type'] = 'application/json';
+          }
+
+          const response = await this.httpClient.post<T>(endpoint, data, {
+            headers,
             timeout,
           });
           return response.data;
