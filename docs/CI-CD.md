@@ -213,7 +213,7 @@ Configuration file: `.releaserc.json`
 ### Setting Up NPM_TOKEN
 
 1. **Generate token on npmjs.com:**
-   ```
+   ```text
    https://www.npmjs.com/settings/YOUR_USERNAME/tokens
    → "Generate New Token"
    → Type: "Automation"
@@ -221,7 +221,7 @@ Configuration file: `.releaserc.json`
    ```
 
 2. **Add to GitHub:**
-   ```
+   ```text
    Repository Settings
    → Secrets and variables
    → Actions
