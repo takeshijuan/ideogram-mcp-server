@@ -4,7 +4,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/nienwu-kyuzan/ideogram-mcp-server?utm_source=oss&utm_medium=github&utm_campaign=nienwu-kyuzan%2Fideogram-mcp-server&labelColor=171717&color=FF570A&label=CodeRabbit+Reviews)](https://coderabbit.ai)
+[![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/takeshijuan/ideogram-mcp-server?utm_source=oss&utm_medium=github&utm_campaign=takeshijuan%2Fideogram-mcp-server&labelColor=171717&color=FF570A&label=CodeRabbit+Reviews)](https://coderabbit.ai)
 
 > **⚠️ Disclaimer**: This is an **unofficial**, community-driven project and is **not affiliated with, endorsed by, or sponsored by Ideogram AI**. For official Ideogram resources, please visit [ideogram.ai](https://ideogram.ai).
 
@@ -31,12 +31,12 @@ A production-grade **Model Context Protocol (MCP) server** that provides seamles
 
 ### Installation
 
-[![Install in Cursor](https://custom-icon-badges.demolab.com/badge/Install_in_Cursor-000000?style=for-the-badge&logo=cursor-ai-white)](https://cursor.com/en/install-mcp?name=ideogram&config=eyJ0eXBlIjoic3RkaW8iLCJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBuaWVud3Uta3l1emFuL2lkZW9ncmFtLW1jcC1zZXJ2ZXIiXSwiZW52Ijp7IklERU9HUkFNX0FQSV9LRVkiOiIifX0=)
-[![Install in VS Code](https://custom-icon-badges.demolab.com/badge/Install_in_VS_Code-007ACC?style=for-the-badge&logo=vsc&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=ideogram&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40nienwu-kyuzan/ideogram-mcp-server%22%5D%2C%22env%22%3A%7B%22IDEOGRAM_API_KEY%22%3A%22%22%7D%7D)
+[![Install in Cursor](https://custom-icon-badges.demolab.com/badge/Install_in_Cursor-000000?style=for-the-badge&logo=cursor-ai-white)](https://cursor.com/en/install-mcp?name=ideogram&config=eyJ0eXBlIjoic3RkaW8iLCJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkB0YWtlc2hpanVhbi9pZGVvZ3JhbS1tY3Atc2VydmVyIl0sImVudiI6eyJJREVPR1JBTV9BUElfS0VZIjoiIn19)
+[![Install in VS Code](https://custom-icon-badges.demolab.com/badge/Install_in_VS_Code-007ACC?style=for-the-badge&logo=vsc&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=ideogram&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40takeshijuan/ideogram-mcp-server%22%5D%2C%22env%22%3A%7B%22IDEOGRAM_API_KEY%22%3A%22%22%7D%7D)
 
 ```bash
 # Clone the repository
-git clone https://github.com/nienwu-kyuzan/ideogram-mcp-server.git
+git clone https://github.com/takeshijuan/ideogram-mcp-server.git
 cd ideogram-mcp-server
 
 # Install dependencies

@@ -1,5 +1,5 @@
 {
-  "name": "@nienwu-kyuzan/ideogram-mcp-server",
+  "name": "@takeshijuan/ideogram-mcp-server",
   "version": "1.0.0",
   "description": "Production-grade Ideogram MCP server for AI image generation integration with Claude Desktop, Cursor, and VS Code",
   "type": "module",
@@ -68,10 +68,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nienwu-kyuzan/ideogram-mcp-server.git"
+    "url": "git+https://github.com/takeshijuan/ideogram-mcp-server.git"
   },
   "bugs": {
-    "url": "https://github.com/nienwu-kyuzan/ideogram-mcp-server/issues"
+    "url": "https://github.com/takeshijuan/ideogram-mcp-server/issues"
   },
-  "homepage": "https://github.com/nienwu-kyuzan/ideogram-mcp-server#readme"
+  "homepage": "https://github.com/takeshijuan/ideogram-mcp-server#readme"
 }
