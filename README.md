@@ -304,7 +304,8 @@ For maintainers publishing to npm:
 **Version conflict:**
 - semantic-release handles version conflicts automatically
 - Never manually edit version in package.json on main branch
-- Force releases: add `[release]` to commit message body
+- Releases are triggered by commit type: `feat:` (minor), `fix:` (patch), `BREAKING CHANGE:` footer (major)
+- See supported commit types in the "Supported prefixes" section above
 
 **Provenance error:**
 - Ensure `id-token: write` permission is set in workflow

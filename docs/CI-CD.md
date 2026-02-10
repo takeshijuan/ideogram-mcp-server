@@ -54,12 +54,13 @@ npm ci
 
 #### 4. Security Audit
 ```bash
-npm audit --audit-level=moderate
+npm audit --audit-level=high
 ```
 - Scans dependencies for known vulnerabilities
-- Continues even if moderate+ severity issues found (to avoid npm registry outages blocking releases)
-- Critical vulnerabilities are also detected by Dependabot
-- Run `npm audit fix` locally to resolve issues
+- Fails on high or critical severity vulnerabilities
+- Moderate vulnerabilities are logged but don't block releases
+- Run `npm audit fix` locally to resolve issues before merging
+- Dependabot also monitors all vulnerability levels
 
 #### 5. Type Check
 ```bash

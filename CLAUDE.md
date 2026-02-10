@@ -180,4 +180,4 @@ Use `npm run verify:claude-desktop` to validate the configuration.
 - Avoid premature abstraction (don't create helpers for one-time use)
 - Keep functions focused and small
 - Comment only when logic isn't self-evident
-- **All comments MUST be written in English** (this is an open source project)
+- **All comments MUST be written in English** (this is an open-source project)

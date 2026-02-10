@@ -43,13 +43,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # 4. Security audit (check for moderate+ severity vulnerabilities)
-      # Note: Continues even on failure to avoid blocking releases due to
-      # temporary npm registry outages. Critical vulnerabilities are also
-      # detected by Dependabot.
+      # 4. Security audit (check for high/critical severity vulnerabilities)
+      # Note: Fails on high/critical vulnerabilities, but allows moderate ones
+      # to avoid blocking releases unnecessarily. Moderate vulnerabilities are
+      # logged and should be addressed locally. Dependabot also monitors all levels.
       - name: Security audit
-        run: npm audit --audit-level=moderate
-        continue-on-error: true
+        run: npm audit --audit-level=high
+        continue-on-error: false
 
       # 5. Type check
       - name: Type check
@@ -67,8 +67,12 @@ jobs:
         run: npm run format:check
 
       # 8. Run tests
-      # Note: Temporarily treating as warning due to existing code test failures
-      # TODO: Fix existing test failures and change continue-on-error to false
+      # WARNING: Currently allows releases with failing tests (23 test failures in existing code)
+      # This is a TEMPORARY measure to unblock CI/CD implementation.
+      # TODO: Address in separate PR:
+      #   1. Fix failing tests (isValidOutpaintDirection, isValidEditMode exports)
+      #   2. Change continue-on-error to false
+      #   3. Consider adding manual approval gate for releases until tests pass
       - name: Run tests
         run: npm run test:run
         continue-on-error: true
