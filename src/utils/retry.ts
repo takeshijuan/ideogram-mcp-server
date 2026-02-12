@@ -11,11 +11,7 @@
 
 import type { Logger } from 'pino';
 import { RETRY_CONFIG, RETRYABLE_STATUS_CODES } from '../config/constants.js';
-import {
-  isIdeogramMCPError,
-  isRetryableError,
-  extractRetryAfter,
-} from './error.handler.js';
+import { isIdeogramMCPError, isRetryableError, extractRetryAfter } from './error.handler.js';
 import { createChildLogger } from './logger.js';
 
 // =============================================================================

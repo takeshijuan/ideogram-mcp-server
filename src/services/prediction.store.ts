@@ -233,7 +233,8 @@ export class PredictionStore {
    */
   constructor(options: PredictionStoreOptions = {}) {
     this.maxQueueSize = options.maxQueueSize ?? PREDICTION_QUEUE.MAX_QUEUE_SIZE;
-    this.predictionTimeoutMs = options.predictionTimeoutMs ?? PREDICTION_QUEUE.PREDICTION_TIMEOUT_MS;
+    this.predictionTimeoutMs =
+      options.predictionTimeoutMs ?? PREDICTION_QUEUE.PREDICTION_TIMEOUT_MS;
     this.cleanupAgeMs = options.cleanupAgeMs ?? PREDICTION_QUEUE.CLEANUP_AGE_MS;
     this.enableAutoCleanup = options.enableAutoCleanup ?? true;
     this.cleanupIntervalMs = options.cleanupIntervalMs ?? 60 * 60 * 1000; // 1 hour default
@@ -300,10 +301,7 @@ export class PredictionStore {
 
     this.predictions.set(id, prediction);
 
-    this.log.info(
-      { predictionId: id, type: options.type },
-      'Prediction created and queued'
-    );
+    this.log.info({ predictionId: id, type: options.type }, 'Prediction created and queued');
 
     // Trigger processing if a processor is registered
     this.processNextIfIdle();
@@ -455,10 +453,7 @@ export class PredictionStore {
    * @param error - Error information
    * @returns The updated prediction
    */
-  markFailed(
-    id: string,
-    error: { code: string; message: string; retryable: boolean }
-  ): Prediction {
+  markFailed(id: string, error: { code: string; message: string; retryable: boolean }): Prediction {
     const prediction = this.update(id, { error });
 
     this.log.warn(
@@ -709,9 +704,7 @@ export class PredictionStore {
         continue;
       }
 
-      const completedAt = prediction.completed_at
-        ? new Date(prediction.completed_at).getTime()
-        : 0;
+      const completedAt = prediction.completed_at ? new Date(prediction.completed_at).getTime() : 0;
 
       if (completedAt < cutoff) {
         this.predictions.delete(id);
@@ -873,10 +866,7 @@ export class PredictionStore {
       this.cleanupTimer.unref();
     }
 
-    this.log.debug(
-      { intervalMs: this.cleanupIntervalMs },
-      'Auto cleanup started'
-    );
+    this.log.debug({ intervalMs: this.cleanupIntervalMs }, 'Auto cleanup started');
   }
 }
 
@@ -902,9 +892,7 @@ export class PredictionStore {
  * });
  * ```
  */
-export function createPredictionStore(
-  options?: PredictionStoreOptions
-): PredictionStore {
+export function createPredictionStore(options?: PredictionStoreOptions): PredictionStore {
   return new PredictionStore(options);
 }
 

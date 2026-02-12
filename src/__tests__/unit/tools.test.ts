@@ -200,7 +200,8 @@ vi.mock('../../utils/error.handler.js', () => ({
   createPredictionNotFoundError: vi.fn((id) => {
     const error = new Error(`Prediction not found: ${id}`);
     (error as unknown as Record<string, unknown>).code = 'PREDICTION_NOT_FOUND';
-    (error as unknown as Record<string, unknown>).userMessage = `No prediction found with ID: ${id}`;
+    (error as unknown as Record<string, unknown>).userMessage =
+      `No prediction found with ID: ${id}`;
     (error as unknown as Record<string, unknown>).statusCode = 404;
     (error as unknown as Record<string, unknown>).retryable = false;
     (error as unknown as Record<string, () => unknown>).toToolError = () => ({
@@ -325,17 +326,19 @@ function createMockEditResponse(imageCount = 1) {
 /**
  * Creates a mock prediction object
  */
-function createMockPrediction(overrides: Partial<{
-  id: string;
-  status: string;
-  progress: number;
-  eta_seconds: number;
-  result: ReturnType<typeof createMockGenerateResponse>;
-  error: { code: string; message: string; retryable: boolean };
-  request: Record<string, unknown>;
-  type: string;
-  created_at: string;
-}> = {}) {
+function createMockPrediction(
+  overrides: Partial<{
+    id: string;
+    status: string;
+    progress: number;
+    eta_seconds: number;
+    result: ReturnType<typeof createMockGenerateResponse>;
+    error: { code: string; message: string; retryable: boolean };
+    request: Record<string, unknown>;
+    type: string;
+    created_at: string;
+  }> = {}
+) {
   return {
     id: overrides.id ?? 'pred_test123456789',
     status: overrides.status ?? 'queued',
@@ -362,13 +365,15 @@ function createMockStorageWithBehavior(enabled = true) {
       mimeType: 'image/png',
     }),
     downloadImages: vi.fn().mockResolvedValue({
-      saved: [{
-        filePath: '/tmp/test/generated_1.png',
-        filename: 'generated_1.png',
-        originalUrl: 'https://ideogram.ai/api/images/test-image-0.png',
-        sizeBytes: 1024,
-        mimeType: 'image/png',
-      }],
+      saved: [
+        {
+          filePath: '/tmp/test/generated_1.png',
+          filename: 'generated_1.png',
+          originalUrl: 'https://ideogram.ai/api/images/test-image-0.png',
+          sizeBytes: 1024,
+          mimeType: 'image/png',
+        },
+      ],
       failed: [],
       total: 1,
       successCount: 1,
@@ -426,7 +431,9 @@ describe('ideogram_generate Tool', () => {
         generate: vi.fn().mockResolvedValue(createMockGenerateResponse()),
         edit: vi.fn(),
       };
-      const handler = createGenerateHandler({ client: mockClient as unknown as ReturnType<typeof createIdeogramClient> });
+      const handler = createGenerateHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+      });
       expect(handler).toBeInstanceOf(Function);
     });
 
@@ -576,13 +583,15 @@ describe('ideogram_generate Tool', () => {
       };
       const mockStorage = createMockStorageWithBehavior(true);
       mockStorage.downloadImages.mockResolvedValue({
-        saved: [{
-          filePath: '/tmp/test/generated_1.png',
-          filename: 'generated_1.png',
-          originalUrl: mockResponse.data[0]?.url,
-          sizeBytes: 1024,
-          mimeType: 'image/png',
-        }],
+        saved: [
+          {
+            filePath: '/tmp/test/generated_1.png',
+            filename: 'generated_1.png',
+            originalUrl: mockResponse.data[0]?.url,
+            sizeBytes: 1024,
+            mimeType: 'image/png',
+          },
+        ],
         failed: [{ url: mockResponse.data[1]?.url, error: 'Download failed' }],
         total: 2,
         successCount: 1,
@@ -653,7 +662,9 @@ describe('ideogram_edit Tool', () => {
       const mockClient = {
         edit: vi.fn().mockResolvedValue(createMockEditResponse()),
       };
-      const handler = createEditHandler({ client: mockClient as unknown as ReturnType<typeof createIdeogramClient> });
+      const handler = createEditHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+      });
       expect(handler).toBeInstanceOf(Function);
     });
   });
@@ -859,7 +870,9 @@ describe('ideogram_generate_async Tool', () => {
         create: vi.fn(),
         dispose: vi.fn(),
       };
-      const handler = createGenerateAsyncHandler({ store: mockStore as unknown as ReturnType<typeof createPredictionStore> });
+      const handler = createGenerateAsyncHandler({
+        store: mockStore as unknown as ReturnType<typeof createPredictionStore>,
+      });
       expect(handler).toBeInstanceOf(Function);
     });
   });
@@ -1005,7 +1018,9 @@ describe('ideogram_get_prediction Tool', () => {
         getOrThrow: vi.fn(),
         dispose: vi.fn(),
       };
-      const handler = createGetPredictionHandler({ store: mockStore as unknown as ReturnType<typeof createPredictionStore> });
+      const handler = createGetPredictionHandler({
+        store: mockStore as unknown as ReturnType<typeof createPredictionStore>,
+      });
       expect(handler).toBeInstanceOf(Function);
     });
   });
@@ -1208,7 +1223,9 @@ describe('ideogram_cancel_prediction Tool', () => {
         cancel: vi.fn(),
         dispose: vi.fn(),
       };
-      const handler = createCancelPredictionHandler({ store: mockStore as unknown as ReturnType<typeof createPredictionStore> });
+      const handler = createCancelPredictionHandler({
+        store: mockStore as unknown as ReturnType<typeof createPredictionStore>,
+      });
       expect(handler).toBeInstanceOf(Function);
     });
   });
@@ -1353,8 +1370,21 @@ describe('Tool Input Schema Validation', () => {
 
     it('should validate all aspect ratios', () => {
       const aspectRatios = [
-        '1x1', '16x9', '9x16', '4x3', '3x4', '3x2', '2x3',
-        '4x5', '5x4', '1x2', '2x1', '1x3', '3x1', '10x16', '16x10',
+        '1x1',
+        '16x9',
+        '9x16',
+        '4x3',
+        '3x4',
+        '3x2',
+        '2x3',
+        '4x5',
+        '5x4',
+        '1x2',
+        '2x1',
+        '1x3',
+        '3x1',
+        '10x16',
+        '16x10',
       ];
       for (const ratio of aspectRatios) {
         const result = GENERATE_TOOL_SCHEMA.safeParse({

@@ -43,16 +43,8 @@ import {
   createPredictionStore,
   type PredictionStoreOptions,
 } from '../services/prediction.store.js';
-import {
-  IdeogramMCPError,
-  wrapError,
-} from '../utils/error.handler.js';
-import {
-  createChildLogger,
-  logToolInvocation,
-  logToolResult,
-  logError,
-} from '../utils/logger.js';
+import { IdeogramMCPError, wrapError } from '../utils/error.handler.js';
+import { createChildLogger, logToolInvocation, logToolResult, logError } from '../utils/logger.js';
 
 // =============================================================================
 // Tool Constants
@@ -211,15 +203,19 @@ export function createCancelPredictionHandler(
         const failedResult: CancelPredictionFailedOutput = {
           success: false,
           prediction_id: input.prediction_id,
-          status: cancelResult.status === 'cancelled' ? 'failed' : cancelResult.status as 'completed' | 'processing' | 'failed',
+          status:
+            cancelResult.status === 'cancelled'
+              ? 'failed'
+              : (cancelResult.status as 'completed' | 'processing' | 'failed'),
           reason: reasonMessages[cancelResult.status],
-          message: `Cannot cancel this prediction because it ${statusLabels[cancelResult.status]}. ${
-            cancelResult.status === 'processing'
-              ? 'The job was already sent to the Ideogram API.'
-              : cancelResult.status === 'completed'
-              ? 'Use ideogram_get_prediction to retrieve the results.'
-              : ''
-          }`.trim(),
+          message:
+            `Cannot cancel this prediction because it ${statusLabels[cancelResult.status]}. ${
+              cancelResult.status === 'processing'
+                ? 'The job was already sent to the Ideogram API.'
+                : cancelResult.status === 'completed'
+                  ? 'Use ideogram_get_prediction to retrieve the results.'
+                  : ''
+            }`.trim(),
         };
         result = failedResult;
       }
@@ -275,7 +271,8 @@ export function createCancelPredictionHandler(
  * Default handler instance using environment configuration.
  * Created lazily on first access to allow config to be loaded.
  */
-let defaultHandler: ((input: CancelPredictionInput) => Promise<CancelPredictionToolResult>) | null = null;
+let defaultHandler: ((input: CancelPredictionInput) => Promise<CancelPredictionToolResult>) | null =
+  null;
 
 /**
  * Default prediction store instance.
@@ -313,7 +310,9 @@ export function getDefaultStore(): PredictionStore {
  *
  * @returns The default handler function
  */
-export function getDefaultHandler(): (input: CancelPredictionInput) => Promise<CancelPredictionToolResult> {
+export function getDefaultHandler(): (
+  input: CancelPredictionInput
+) => Promise<CancelPredictionToolResult> {
   if (!defaultHandler) {
     defaultHandler = createCancelPredictionHandler({
       store: getDefaultStore(),

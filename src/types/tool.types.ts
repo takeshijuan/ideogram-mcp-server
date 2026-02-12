@@ -47,12 +47,7 @@ export const AspectRatioSchema = z.enum([
  * DEFAULT: Balanced speed and quality
  * QUALITY: Slowest, highest quality
  */
-export const RenderingSpeedSchema = z.enum([
-  'FLASH',
-  'TURBO',
-  'DEFAULT',
-  'QUALITY',
-]);
+export const RenderingSpeedSchema = z.enum(['FLASH', 'TURBO', 'DEFAULT', 'QUALITY']);
 
 /**
  * Magic prompt enhancement options.
@@ -415,9 +410,7 @@ export interface CancelPredictionFailedOutput {
 /**
  * Combined output type for ideogram_cancel_prediction tool
  */
-export type CancelPredictionOutput =
-  | CancelPredictionSuccessOutput
-  | CancelPredictionFailedOutput;
+export type CancelPredictionOutput = CancelPredictionSuccessOutput | CancelPredictionFailedOutput;
 
 // =============================================================================
 // Tool Error Output
@@ -464,9 +457,7 @@ export const ToolSchemas = {
 /**
  * Type guard to check if an output is an error
  */
-export const isToolError = (
-  output: { success: boolean }
-): output is ToolErrorOutput => {
+export const isToolError = (output: { success: boolean }): output is ToolErrorOutput => {
   return output.success === false && 'error_code' in output;
 };
 
@@ -485,10 +476,7 @@ export const isPredictionCompleted = (
 export const isPredictionProcessing = (
   output: GetPredictionOutput
 ): output is GetPredictionProcessingOutput => {
-  return (
-    output.success === true &&
-    (output.status === 'queued' || output.status === 'processing')
-  );
+  return output.success === true && (output.status === 'queued' || output.status === 'processing');
 };
 
 /**

@@ -49,25 +49,14 @@ import {
   createIdeogramClient,
   type IdeogramClientOptions,
 } from '../services/ideogram.client.js';
-import {
-  calculateEditCost,
-  toCostEstimateOutput,
-} from '../services/cost.calculator.js';
+import { calculateEditCost, toCostEstimateOutput } from '../services/cost.calculator.js';
 import {
   StorageService,
   createStorageService,
   type StorageServiceOptions,
 } from '../services/storage.service.js';
-import {
-  IdeogramMCPError,
-  wrapError,
-} from '../utils/error.handler.js';
-import {
-  createChildLogger,
-  logToolInvocation,
-  logToolResult,
-  logError,
-} from '../utils/logger.js';
+import { IdeogramMCPError, wrapError } from '../utils/error.handler.js';
+import { createChildLogger, logToolInvocation, logToolResult, logError } from '../utils/logger.js';
 
 // =============================================================================
 // Tool Constants
@@ -178,9 +167,7 @@ export function createEditHandler(
   /**
    * Tool handler implementation
    */
-  return async function ideogramEditHandler(
-    input: EditInput
-  ): Promise<EditToolResult> {
+  return async function ideogramEditHandler(input: EditInput): Promise<EditToolResult> {
     const startTime = Date.now();
 
     // Log tool invocation
@@ -251,9 +238,7 @@ export function createEditHandler(
           const apiImage = response.data[i];
           if (!apiImage) continue;
 
-          const savedImage = saveResult.saved.find(
-            (s) => s.originalUrl === apiImage.url
-          );
+          const savedImage = saveResult.saved.find((s) => s.originalUrl === apiImage.url);
 
           const outputImage: GeneratedImageOutput = {
             url: apiImage.url,
@@ -277,10 +262,7 @@ export function createEditHandler(
 
         // Log if any saves failed
         if (saveResult.failureCount > 0) {
-          log.warn(
-            { failedCount: saveResult.failureCount },
-            'Some images failed to save locally'
-          );
+          log.warn({ failedCount: saveResult.failureCount }, 'Some images failed to save locally');
         }
       } else {
         // Just map API response to output format
@@ -426,9 +408,7 @@ export function resetDefaultHandler(): void {
  * }
  * ```
  */
-export async function ideogramEdit(
-  input: EditInput
-): Promise<EditToolResult> {
+export async function ideogramEdit(input: EditInput): Promise<EditToolResult> {
   return getDefaultHandler()(input);
 }
 

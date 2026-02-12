@@ -42,16 +42,8 @@ import {
   createPredictionStore,
   type PredictionStoreOptions,
 } from '../services/prediction.store.js';
-import {
-  IdeogramMCPError,
-  wrapError,
-} from '../utils/error.handler.js';
-import {
-  createChildLogger,
-  logToolInvocation,
-  logToolResult,
-  logError,
-} from '../utils/logger.js';
+import { IdeogramMCPError, wrapError } from '../utils/error.handler.js';
+import { createChildLogger, logToolInvocation, logToolResult, logError } from '../utils/logger.js';
 
 // =============================================================================
 // Tool Constants
@@ -298,7 +290,9 @@ export function getDefaultStore(): PredictionStore {
  *
  * @returns The default handler function
  */
-export function getDefaultHandler(): (input: GenerateAsyncInput) => Promise<GenerateAsyncToolResult> {
+export function getDefaultHandler(): (
+  input: GenerateAsyncInput
+) => Promise<GenerateAsyncToolResult> {
   if (!defaultHandler) {
     defaultHandler = createGenerateAsyncHandler({
       store: getDefaultStore(),

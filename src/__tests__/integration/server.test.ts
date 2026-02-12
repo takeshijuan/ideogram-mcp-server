@@ -122,10 +122,7 @@ import {
   initializeSharedStore,
 } from '../../server.js';
 import { SERVER_INFO } from '../../config/constants.js';
-import {
-  createPredictionStore,
-  type PredictionStore,
-} from '../../services/prediction.store.js';
+import { createPredictionStore, type PredictionStore } from '../../services/prediction.store.js';
 
 // =============================================================================
 // Test Utilities
@@ -170,12 +167,7 @@ function createMockEditResponse(imageCount = 1) {
 /**
  * Creates a mock API error with proper structure
  */
-function createMockApiError(
-  message: string,
-  code: string,
-  statusCode: number,
-  retryable = false
-) {
+function createMockApiError(message: string, code: string, statusCode: number, retryable = false) {
   const error = new Error(message) as Error & {
     code: string;
     statusCode: number;
@@ -393,12 +385,7 @@ describe('MCP Server Integration', () => {
     });
 
     it('should handle API errors gracefully', async () => {
-      const apiError = createMockApiError(
-        'API Error',
-        'INTERNAL_ERROR',
-        500,
-        true
-      );
+      const apiError = createMockApiError('API Error', 'INTERNAL_ERROR', 500, true);
       mockGenerate.mockRejectedValueOnce(apiError);
 
       const generateTool = getToolByName('ideogram_generate');
@@ -418,12 +405,7 @@ describe('MCP Server Integration', () => {
     });
 
     it('should handle rate limiting errors', async () => {
-      const rateLimitError = createMockApiError(
-        'Rate limit exceeded',
-        'RATE_LIMITED',
-        429,
-        true
-      );
+      const rateLimitError = createMockApiError('Rate limit exceeded', 'RATE_LIMITED', 429, true);
       mockGenerate.mockRejectedValueOnce(rateLimitError);
 
       const generateTool = getToolByName('ideogram_generate');
@@ -518,11 +500,7 @@ describe('MCP Server Integration', () => {
     });
 
     it('should handle edit API errors', async () => {
-      const apiError = createMockApiError(
-        'Invalid image',
-        'INVALID_INPUT',
-        400
-      );
+      const apiError = createMockApiError('Invalid image', 'INVALID_INPUT', 400);
       mockEdit.mockRejectedValueOnce(apiError);
 
       const editTool = getToolByName('ideogram_edit');
@@ -638,11 +616,7 @@ describe('MCP Server Integration', () => {
     });
 
     it('should handle authentication errors', async () => {
-      const authError = createMockApiError(
-        'Invalid API key',
-        'INVALID_API_KEY',
-        401
-      );
+      const authError = createMockApiError('Invalid API key', 'INVALID_API_KEY', 401);
       mockGenerate.mockRejectedValueOnce(authError);
 
       const generateTool = getToolByName('ideogram_generate');
@@ -667,12 +641,7 @@ describe('MCP Server Integration', () => {
 
     it('should include retryable flag in error responses', async () => {
       // 500 errors are typically retryable
-      const serverError = createMockApiError(
-        'Server Error',
-        'INTERNAL_ERROR',
-        500,
-        true
-      );
+      const serverError = createMockApiError('Server Error', 'INTERNAL_ERROR', 500, true);
       mockGenerate.mockRejectedValueOnce(serverError);
 
       const generateTool = getToolByName('ideogram_generate');

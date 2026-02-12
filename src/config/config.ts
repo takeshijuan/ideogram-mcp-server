@@ -156,10 +156,7 @@ const rawConfig = {
   localSaveDir: process.env['LOCAL_SAVE_DIR'],
   enableLocalSave: parseBoolean(process.env['ENABLE_LOCAL_SAVE'], DEFAULTS.SAVE_LOCALLY),
   maxConcurrentRequests: parseInteger(process.env['MAX_CONCURRENT_REQUESTS'], 3),
-  requestTimeoutMs: parseInteger(
-    process.env['REQUEST_TIMEOUT_MS'],
-    TIMEOUTS.DEFAULT_REQUEST_MS
-  ),
+  requestTimeoutMs: parseInteger(process.env['REQUEST_TIMEOUT_MS'], TIMEOUTS.DEFAULT_REQUEST_MS),
 };
 
 /**

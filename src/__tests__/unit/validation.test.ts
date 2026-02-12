@@ -415,8 +415,21 @@ describe('Aspect Ratio Validation', () => {
   describe('validateAspectRatio', () => {
     it('should accept valid aspect ratios with x separator', () => {
       const validRatios = [
-        '1x1', '16x9', '9x16', '4x3', '3x4', '3x2', '2x3',
-        '4x5', '5x4', '1x2', '2x1', '1x3', '3x1', '10x16', '16x10',
+        '1x1',
+        '16x9',
+        '9x16',
+        '4x3',
+        '3x4',
+        '3x2',
+        '2x3',
+        '4x5',
+        '5x4',
+        '1x2',
+        '2x1',
+        '1x3',
+        '3x1',
+        '10x16',
+        '16x10',
       ];
 
       validRatios.forEach((ratio) => {
@@ -876,9 +889,7 @@ describe('Utility Functions', () => {
     });
 
     it('should throw for undefined', () => {
-      expect(() => assertDefined(undefined, 'value is undefined')).toThrow(
-        'value is undefined'
-      );
+      expect(() => assertDefined(undefined, 'value is undefined')).toThrow('value is undefined');
     });
   });
 

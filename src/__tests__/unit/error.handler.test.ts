@@ -83,38 +83,20 @@ describe('IdeogramMCPError', () => {
     });
 
     it('should set name to IdeogramMCPError', () => {
-      const error = new IdeogramMCPError(
-        'TEST_ERROR',
-        'message',
-        'user message',
-        400,
-        false
-      );
+      const error = new IdeogramMCPError('TEST_ERROR', 'message', 'user message', 400, false);
 
       expect(error.name).toBe('IdeogramMCPError');
     });
 
     it('should be instance of Error', () => {
-      const error = new IdeogramMCPError(
-        'TEST_ERROR',
-        'message',
-        'user message',
-        400,
-        false
-      );
+      const error = new IdeogramMCPError('TEST_ERROR', 'message', 'user message', 400, false);
 
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(IdeogramMCPError);
     });
 
     it('should have a stack trace', () => {
-      const error = new IdeogramMCPError(
-        'TEST_ERROR',
-        'message',
-        'user message',
-        400,
-        false
-      );
+      const error = new IdeogramMCPError('TEST_ERROR', 'message', 'user message', 400, false);
 
       expect(error.stack).toBeDefined();
       expect(error.stack).toContain('IdeogramMCPError');
@@ -611,13 +593,7 @@ describe('Error Conversion Utilities', () => {
 
   describe('wrapError', () => {
     it('should return IdeogramMCPError as-is', () => {
-      const original = new IdeogramMCPError(
-        'TEST',
-        'message',
-        'user message',
-        400,
-        false
-      );
+      const original = new IdeogramMCPError('TEST', 'message', 'user message', 400, false);
 
       const wrapped = wrapError(original);
 
@@ -741,25 +717,13 @@ describe('Type Guards', () => {
 
   describe('hasErrorCode', () => {
     it('should return true when error has matching code', () => {
-      const error = new IdeogramMCPError(
-        ERROR_CODES.RATE_LIMITED,
-        'msg',
-        'user msg',
-        429,
-        true
-      );
+      const error = new IdeogramMCPError(ERROR_CODES.RATE_LIMITED, 'msg', 'user msg', 429, true);
 
       expect(hasErrorCode(error, ERROR_CODES.RATE_LIMITED)).toBe(true);
     });
 
     it('should return false when error has different code', () => {
-      const error = new IdeogramMCPError(
-        ERROR_CODES.RATE_LIMITED,
-        'msg',
-        'user msg',
-        429,
-        true
-      );
+      const error = new IdeogramMCPError(ERROR_CODES.RATE_LIMITED, 'msg', 'user msg', 429, true);
 
       expect(hasErrorCode(error, ERROR_CODES.INVALID_API_KEY)).toBe(false);
     });

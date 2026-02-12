@@ -72,10 +72,7 @@ export type ValidationResult<T> = ValidationSuccess<T> | ValidationFailure;
  *   console.error(result.errors);
  * }
  */
-export function safeValidate<T>(
-  schema: ZodSchema<T>,
-  input: unknown
-): ValidationResult<T> {
+export function safeValidate<T>(schema: ZodSchema<T>, input: unknown): ValidationResult<T> {
   const result = schema.safeParse(input);
 
   if (result.success) {
@@ -373,7 +370,6 @@ export function isValidStyleType(value: string): value is StyleType {
   return (STYLE_TYPES as readonly string[]).includes(value);
 }
 
-
 // =============================================================================
 // Prompt Validation
 // =============================================================================
@@ -641,9 +637,7 @@ export function isValidationSuccess<T>(
 /**
  * Type guard to check if a validation result is a failure.
  */
-export function isValidationFailure<T>(
-  result: ValidationResult<T>
-): result is ValidationFailure {
+export function isValidationFailure<T>(result: ValidationResult<T>): result is ValidationFailure {
   return result.success === false;
 }
 
@@ -694,10 +688,7 @@ export function combineValidationResults<T extends Record<string, unknown>>(
  * @param message - Error message if value is nullish
  * @returns The value if not nullish
  */
-export function assertDefined<T>(
-  value: T | null | undefined,
-  message: string
-): T {
+export function assertDefined<T>(value: T | null | undefined, message: string): T {
   if (value === null || value === undefined) {
     throw new Error(message);
   }

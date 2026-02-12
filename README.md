@@ -212,6 +212,106 @@ npm run format
 npm run inspect
 ```
 
+## 🚀 CI/CD and Release Process
+
+This project uses **semantic-release** for fully automated versioning and publishing.
+
+### Automated Release Workflow
+
+When code is merged to the `main` branch:
+
+1. **Quality Checks** - TypeScript, linting, formatting, tests, security audit
+2. **Build** - Compile TypeScript and generate type definitions
+3. **Version Determination** - Analyze commits using conventional commits
+4. **Changelog Generation** - Auto-generate CHANGELOG.md
+5. **NPM Publish** - Publish to npm with provenance
+6. **GitHub Release** - Create GitHub release with notes and tarball
+
+### Commit Message Format
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) for all commits:
+
+```bash
+feat: add new image editing feature       # → minor version bump (1.0.0 → 1.1.0)
+fix: resolve timeout issue in async API   # → patch version bump (1.0.0 → 1.0.1)
+perf: optimize image download speed       # → patch version bump
+docs: update API documentation            # → no release
+
+# Breaking changes → major version bump (1.0.0 → 2.0.0)
+feat!: redesign tool input schema
+# or
+feat: redesign tool input schema
+
+BREAKING CHANGE: Input schema has changed
+```
+
+**Supported prefixes:**
+- `feat`, `add`: New features (minor bump)
+- `fix`: Bug fixes (patch bump)
+- `change`: Specification changes (minor bump)
+- `perf`: Performance improvements (patch bump)
+- `docs`: Documentation updates (no release)
+- `refactor`: Code refactoring (patch bump)
+- `remove`: Remove features/files (major bump)
+- `disable`: Disable functionality (patch bump)
+- `test`: Test updates (no release)
+- `chore`: Build/tooling changes (no release)
+
+### Setting Up NPM_TOKEN
+
+For maintainers publishing to npm:
+
+1. **Create NPM Access Token**
+   ```bash
+   # Log in to npmjs.com
+   # Go to: https://www.npmjs.com/settings/YOUR_USERNAME/tokens
+   # Click "Generate New Token" → "Automation" type
+   # Copy the token (starts with npm_...)
+   ```
+
+2. **Add to GitHub Secrets**
+   ```bash
+   # Go to: https://github.com/YOUR_USERNAME/ideogram-mcp-server/settings/secrets/actions
+   # Click "New repository secret"
+   # Name: NPM_TOKEN
+   # Value: [paste your npm token]
+   ```
+
+3. **Verify Token Scope**
+   - Ensure token has **publish** permissions
+   - Token should be of type **Automation** or **Publish**
+
+### Security Features
+
+- ✅ **NPM Provenance** - Cryptographic proof of package origin
+- ✅ **Dependency Audit** - Automated vulnerability scanning
+- ✅ **Minimal Permissions** - GITHUB_TOKEN restricted to required scopes
+- ✅ **Secret Management** - API keys via GitHub Secrets only
+- ✅ **Build Verification** - Artifacts validated before publish
+
+### Troubleshooting
+
+**Release not triggering:**
+- Verify commits use conventional commit format
+- Check GitHub Actions logs for errors
+- Ensure `main` branch protection allows semantic-release bot
+
+**NPM publish fails:**
+- Verify `NPM_TOKEN` secret is set correctly
+- Check token hasn't expired (npm tokens don't expire by default)
+- Ensure package name isn't already taken (for forks)
+
+**Version conflict:**
+- semantic-release handles version conflicts automatically
+- Never manually edit version in package.json on main branch
+- Releases are triggered by commit type: `feat:` (minor), `fix:` (patch), `BREAKING CHANGE:` footer (major)
+- See supported commit types in the "Supported prefixes" section above
+
+**Provenance error:**
+- Ensure `id-token: write` permission is set in workflow
+- Verify using npm 9.5.0 or later
+- Check npm registry status: https://status.npmjs.com
+
 ## 📁 Project Structure
 
 ```

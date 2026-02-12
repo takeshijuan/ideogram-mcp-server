@@ -22,10 +22,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
-import {
-  PredictionStore,
-  createPredictionStore,
-} from '../services/prediction.store.js';
+import { PredictionStore, createPredictionStore } from '../services/prediction.store.js';
 
 // =============================================================================
 // Re-export Tool Modules
@@ -324,10 +321,7 @@ export interface RegisterToolsOptions {
  * // - ideogram_cancel_prediction
  * ```
  */
-export function registerTools(
-  server: McpServer,
-  options: RegisterToolsOptions = {}
-): void {
+export function registerTools(server: McpServer, options: RegisterToolsOptions = {}): void {
   const { initializeStore = true, storeOptions } = options;
 
   // Initialize shared store if requested
@@ -380,9 +374,7 @@ export function registerTools(
  * }
  * ```
  */
-export function getToolByName(
-  name: string
-): (typeof allTools)[number] | undefined {
+export function getToolByName(name: string): (typeof allTools)[number] | undefined {
   return allTools.find((tool) => tool.name === name);
 }
 

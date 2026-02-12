@@ -84,11 +84,7 @@ export const RENDERING_SPEEDS: readonly RenderingSpeed[] = [
 /**
  * Magic prompt enhancement options.
  */
-export const MAGIC_PROMPT_OPTIONS: readonly MagicPrompt[] = [
-  'AUTO',
-  'ON',
-  'OFF',
-] as const;
+export const MAGIC_PROMPT_OPTIONS: readonly MagicPrompt[] = ['AUTO', 'ON', 'OFF'] as const;
 
 /**
  * Style type options for image generation.
@@ -116,7 +112,6 @@ export const PREDICTION_STATUSES: readonly PredictionStatus[] = [
   'failed',
   'cancelled',
 ] as const;
-
 
 // =============================================================================
 // Default Values

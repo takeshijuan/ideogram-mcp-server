@@ -258,10 +258,7 @@ export class StorageService {
       await this.saveFile(filePath, buffer);
 
       const durationMs = Date.now() - startTime;
-      this.log.info(
-        { filename, sizeBytes: buffer.length, durationMs },
-        'Image saved successfully'
-      );
+      this.log.info({ filename, sizeBytes: buffer.length, durationMs }, 'Image saved successfully');
 
       return {
         filePath,
@@ -304,10 +301,7 @@ export class StorageService {
    * }
    * ```
    */
-  async downloadImages(
-    urls: string[],
-    options: DownloadOptions = {}
-  ): Promise<BatchSaveResult> {
+  async downloadImages(urls: string[], options: DownloadOptions = {}): Promise<BatchSaveResult> {
     if (!this.enabled) {
       return {
         saved: [],
@@ -333,16 +327,13 @@ export class StorageService {
         const imageOptions: DownloadOptions = {
           ...options,
           // Add index to prefix if multiple images
-          prefix: options.prefix
-            ? `${options.prefix}_${index + 1}`
-            : `image_${index + 1}`,
+          prefix: options.prefix ? `${options.prefix}_${index + 1}` : `image_${index + 1}`,
         };
 
         const saved = await this.downloadImage(url, imageOptions);
         return { success: true as const, url, saved };
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         return { success: false as const, url, error: errorMessage };
       }
     });
@@ -386,10 +377,7 @@ export class StorageService {
    * const result = await storage.saveImage(imageBuffer, { prefix: 'edited' });
    * ```
    */
-  async saveImage(
-    data: Buffer | string,
-    options: DownloadOptions = {}
-  ): Promise<SavedImage> {
+  async saveImage(data: Buffer | string, options: DownloadOptions = {}): Promise<SavedImage> {
     if (!this.enabled) {
       throw createStorageError('save', 'Local storage is disabled');
     }
@@ -415,9 +403,7 @@ export class StorageService {
     const filename = this.generateFilename(options, extension);
 
     // Determine full path
-    const targetDir = options.subdir
-      ? path.join(this.storageDir, options.subdir)
-      : this.storageDir;
+    const targetDir = options.subdir ? path.join(this.storageDir, options.subdir) : this.storageDir;
     const filePath = path.resolve(targetDir, filename);
 
     // Save the file
@@ -455,9 +441,7 @@ export class StorageService {
    * @param subdir - Optional subdirectory
    */
   async fileExists(filename: string, subdir?: string): Promise<boolean> {
-    const targetDir = subdir
-      ? path.join(this.storageDir, subdir)
-      : this.storageDir;
+    const targetDir = subdir ? path.join(this.storageDir, subdir) : this.storageDir;
     const filePath = path.resolve(targetDir, filename);
 
     try {
@@ -476,9 +460,7 @@ export class StorageService {
    * @returns True if deleted, false if file didn't exist
    */
   async deleteFile(filename: string, subdir?: string): Promise<boolean> {
-    const targetDir = subdir
-      ? path.join(this.storageDir, subdir)
-      : this.storageDir;
+    const targetDir = subdir ? path.join(this.storageDir, subdir) : this.storageDir;
     const filePath = path.resolve(targetDir, filename);
 
     try {
@@ -500,16 +482,12 @@ export class StorageService {
    * @returns Array of filenames
    */
   async listFiles(subdir?: string): Promise<string[]> {
-    const targetDir = subdir
-      ? path.join(this.storageDir, subdir)
-      : this.storageDir;
+    const targetDir = subdir ? path.join(this.storageDir, subdir) : this.storageDir;
     const resolvedDir = path.resolve(targetDir);
 
     try {
       const entries = await fs.promises.readdir(resolvedDir, { withFileTypes: true });
-      return entries
-        .filter((entry) => entry.isFile())
-        .map((entry) => entry.name);
+      return entries.filter((entry) => entry.isFile()).map((entry) => entry.name);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         return [];
@@ -525,9 +503,7 @@ export class StorageService {
    * @returns Total size in bytes
    */
   async getStorageSize(subdir?: string): Promise<number> {
-    const targetDir = subdir
-      ? path.join(this.storageDir, subdir)
-      : this.storageDir;
+    const targetDir = subdir ? path.join(this.storageDir, subdir) : this.storageDir;
     const resolvedDir = path.resolve(targetDir);
 
     try {
@@ -559,9 +535,7 @@ export class StorageService {
    * Ensures the storage directory exists, creating it if necessary.
    */
   private async ensureStorageDirectory(subdir?: string): Promise<void> {
-    const targetDir = subdir
-      ? path.join(this.storageDir, subdir)
-      : this.storageDir;
+    const targetDir = subdir ? path.join(this.storageDir, subdir) : this.storageDir;
     const resolvedDir = path.resolve(targetDir);
 
     if (this.initialized && !subdir) {
@@ -589,10 +563,7 @@ export class StorageService {
     try {
       await fs.promises.writeFile(filePath, data);
     } catch (error) {
-      throw createStorageError(
-        'write',
-        `Failed to write file: ${(error as Error).message}`
-      );
+      throw createStorageError('write', `Failed to write file: ${(error as Error).message}`);
     }
   }
 
@@ -625,21 +596,12 @@ export class StorageService {
     }
 
     // PNG: 89 50 4E 47
-    if (
-      buffer[0] === 0x89 &&
-      buffer[1] === 0x50 &&
-      buffer[2] === 0x4e &&
-      buffer[3] === 0x47
-    ) {
+    if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) {
       return 'image/png';
     }
 
     // JPEG: FF D8 FF
-    if (
-      buffer[0] === 0xff &&
-      buffer[1] === 0xd8 &&
-      buffer[2] === 0xff
-    ) {
+    if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
       return 'image/jpeg';
     }
 
@@ -659,12 +621,7 @@ export class StorageService {
     }
 
     // GIF: 47 49 46 38
-    if (
-      buffer[0] === 0x47 &&
-      buffer[1] === 0x49 &&
-      buffer[2] === 0x46 &&
-      buffer[3] === 0x38
-    ) {
+    if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38) {
       return 'image/gif';
     }
 
@@ -708,9 +665,7 @@ export class StorageService {
  * });
  * ```
  */
-export function createStorageService(
-  options?: StorageServiceOptions
-): StorageService {
+export function createStorageService(options?: StorageServiceOptions): StorageService {
   return new StorageService(options);
 }
 
@@ -763,9 +718,7 @@ export function formatFileSize(bytes: number): string {
  */
 export function isIdeogramTempUrl(url: string): boolean {
   return (
-    url.includes('ideogram.ai') ||
-    url.includes('ideogram-api') ||
-    url.includes('cdn.ideogram')
+    url.includes('ideogram.ai') || url.includes('ideogram-api') || url.includes('cdn.ideogram')
   );
 }
 

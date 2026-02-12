@@ -365,9 +365,7 @@ export function estimateEditsFromBudget(
  */
 export function comparePricingTiers(numImages: number = 1): CostEstimate[] {
   const speeds: RenderingSpeed[] = ['FLASH', 'TURBO', 'DEFAULT', 'QUALITY'];
-  return speeds.map((renderingSpeed) =>
-    calculateCost({ numImages, renderingSpeed })
-  );
+  return speeds.map((renderingSpeed) => calculateCost({ numImages, renderingSpeed }));
 }
 
 /**
@@ -378,9 +376,7 @@ export function comparePricingTiers(numImages: number = 1): CostEstimate[] {
  */
 export function compareEditPricingTiers(numImages: number = 1): CostEstimate[] {
   const speeds: RenderingSpeed[] = ['FLASH', 'TURBO', 'DEFAULT', 'QUALITY'];
-  return speeds.map((renderingSpeed) =>
-    calculateEditCost({ numImages, renderingSpeed })
-  );
+  return speeds.map((renderingSpeed) => calculateEditCost({ numImages, renderingSpeed }));
 }
 
 // =============================================================================

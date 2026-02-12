@@ -56,16 +56,8 @@ import {
   calculateEditCost,
   toCostEstimateOutput,
 } from '../services/cost.calculator.js';
-import {
-  IdeogramMCPError,
-  wrapError,
-} from '../utils/error.handler.js';
-import {
-  createChildLogger,
-  logToolInvocation,
-  logToolResult,
-  logError,
-} from '../utils/logger.js';
+import { IdeogramMCPError, wrapError } from '../utils/error.handler.js';
+import { createChildLogger, logToolInvocation, logToolResult, logError } from '../utils/logger.js';
 
 // =============================================================================
 // Tool Constants
@@ -244,13 +236,16 @@ export function createGetPredictionHandler(
           }
 
           // Calculate cost estimate based on request parameters
-          const renderingSpeed = (prediction.request.rendering_speed ?? 'DEFAULT') as RenderingSpeed;
-          const numImages = images.length || prediction.request.num_images || 1;
+          const renderingSpeed = (prediction.request.rendering_speed ??
+            'DEFAULT') as RenderingSpeed;
+          const numImages =
+            images.length > 0 ? images.length : (prediction.request.num_images ?? 1);
 
           // Use different cost calculation for edit vs generate
-          const cost = prediction.type === 'edit'
-            ? calculateEditCost({ numImages, renderingSpeed })
-            : calculateCost({ numImages, renderingSpeed });
+          const cost =
+            prediction.type === 'edit'
+              ? calculateEditCost({ numImages, renderingSpeed })
+              : calculateCost({ numImages, renderingSpeed });
 
           const completedResult: GetPredictionCompletedOutput = {
             success: true,
@@ -274,14 +269,16 @@ export function createGetPredictionHandler(
             status: prediction.status,
             error: prediction.error ?? {
               code: prediction.status === 'cancelled' ? 'CANCELLED' : 'UNKNOWN_ERROR',
-              message: prediction.status === 'cancelled'
-                ? 'Prediction was cancelled by user'
-                : 'Prediction failed with an unknown error',
+              message:
+                prediction.status === 'cancelled'
+                  ? 'Prediction was cancelled by user'
+                  : 'Prediction failed with an unknown error',
               retryable: false,
             },
-            message: prediction.status === 'cancelled'
-              ? 'This prediction was cancelled. Create a new async generation request to try again.'
-              : `Prediction failed: ${prediction.error?.message ?? 'Unknown error'}. ${prediction.error?.retryable ? 'This error may be retryable.' : 'Please check your input and try again.'}`,
+            message:
+              prediction.status === 'cancelled'
+                ? 'This prediction was cancelled. Create a new async generation request to try again.'
+                : `Prediction failed: ${prediction.error?.message ?? 'Unknown error'}. ${prediction.error?.retryable ? 'This error may be retryable.' : 'Please check your input and try again.'}`,
           };
 
           result = failedResult;
@@ -392,7 +389,9 @@ export function getDefaultStore(): PredictionStore {
  *
  * @returns The default handler function
  */
-export function getDefaultHandler(): (input: GetPredictionInput) => Promise<GetPredictionToolResult> {
+export function getDefaultHandler(): (
+  input: GetPredictionInput
+) => Promise<GetPredictionToolResult> {
   if (!defaultHandler) {
     defaultHandler = createGetPredictionHandler({
       store: getDefaultStore(),

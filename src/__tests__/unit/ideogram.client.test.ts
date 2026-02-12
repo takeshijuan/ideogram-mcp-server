@@ -97,7 +97,11 @@ import {
   type EditParams,
 } from '../../services/ideogram.client.js';
 import { ERROR_CODES } from '../../config/constants.js';
-import { IdeogramMCPError, isIdeogramMCPError, createMissingApiKeyError } from '../../utils/error.handler.js';
+import {
+  IdeogramMCPError,
+  isIdeogramMCPError,
+  createMissingApiKeyError,
+} from '../../utils/error.handler.js';
 
 // =============================================================================
 // Test Utilities
@@ -761,7 +765,12 @@ describe('IdeogramClient', () => {
     });
 
     it('should handle timeout errors', async () => {
-      const timeoutError = createAxiosError('timeout of 30000ms exceeded', undefined, undefined, 'ECONNABORTED');
+      const timeoutError = createAxiosError(
+        'timeout of 30000ms exceeded',
+        undefined,
+        undefined,
+        'ECONNABORTED'
+      );
       mockHttpClient.post.mockRejectedValueOnce(timeoutError);
 
       const { withRetry } = await import('../../utils/retry.js');
@@ -990,10 +999,7 @@ describe('IdeogramClient', () => {
         mode: 'inpaint',
       });
 
-      expect(axios.get).toHaveBeenCalledWith(
-        'http://example.com/image.png',
-        expect.anything()
-      );
+      expect(axios.get).toHaveBeenCalledWith('http://example.com/image.png', expect.anything());
     });
 
     it('should detect content type from downloaded image if header is missing', async () => {

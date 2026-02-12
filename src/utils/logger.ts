@@ -250,10 +250,7 @@ export function createChildLogger(component: LoggerComponent): Logger {
  * reqLogger.info({ numImages: 4 }, 'Generating multiple images');
  * ```
  */
-export function createRequestLogger(
-  requestId: string,
-  component?: LoggerComponent
-): Logger {
+export function createRequestLogger(requestId: string, component?: LoggerComponent): Logger {
   const bindings: Record<string, unknown> = { requestId };
   if (component) {
     bindings['component'] = component;
@@ -353,10 +350,7 @@ export function logApiResponse(log: Logger, context: ApiResponseLogContext): voi
 export function logToolInvocation(log: Logger, context: ToolInvocationLogContext): void {
   // Sanitize params to not log sensitive data or very large strings
   const sanitizedParams = sanitizeToolParams(context.params);
-  log.info(
-    { tool: context.tool, params: sanitizedParams },
-    'Tool invoked'
-  );
+  log.info({ tool: context.tool, params: sanitizedParams }, 'Tool invoked');
 }
 
 /**

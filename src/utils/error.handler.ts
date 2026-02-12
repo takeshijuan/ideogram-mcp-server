@@ -114,9 +114,7 @@ export class IdeogramMCPError extends Error {
 /**
  * Creates an error for invalid or missing API key.
  */
-export function createInvalidApiKeyError(
-  details?: Record<string, unknown>
-): IdeogramMCPError {
+export function createInvalidApiKeyError(details?: Record<string, unknown>): IdeogramMCPError {
   return new IdeogramMCPError(
     ERROR_CODES.INVALID_API_KEY,
     'Invalid or missing Ideogram API key',
@@ -145,9 +143,7 @@ export function createMissingApiKeyError(): IdeogramMCPError {
  *
  * @param retryAfterSeconds - Seconds until rate limit resets (if known)
  */
-export function createRateLimitError(
-  retryAfterSeconds?: number
-): IdeogramMCPError {
+export function createRateLimitError(retryAfterSeconds?: number): IdeogramMCPError {
   const retryMessage = retryAfterSeconds
     ? ` Please wait ${retryAfterSeconds} seconds before retrying.`
     : ' Please wait a moment and try again.';
@@ -225,9 +221,7 @@ export function createInvalidPromptError(reason: string): IdeogramMCPError {
 /**
  * Creates an error for invalid aspect ratio.
  */
-export function createInvalidAspectRatioError(
-  provided: string
-): IdeogramMCPError {
+export function createInvalidAspectRatioError(provided: string): IdeogramMCPError {
   return new IdeogramMCPError(
     ERROR_CODES.INVALID_ASPECT_RATIO,
     `Invalid aspect ratio: ${provided}`,
@@ -289,10 +283,7 @@ export function createImageTooLargeError(
 /**
  * Creates an error for network failures.
  */
-export function createNetworkError(
-  reason: string,
-  originalError?: Error
-): IdeogramMCPError {
+export function createNetworkError(reason: string, originalError?: Error): IdeogramMCPError {
   return new IdeogramMCPError(
     ERROR_CODES.NETWORK_ERROR,
     `Network error: ${reason}`,
@@ -320,9 +311,7 @@ export function createTimeoutError(timeoutMs: number): IdeogramMCPError {
 /**
  * Creates an error for prediction not found.
  */
-export function createPredictionNotFoundError(
-  predictionId: string
-): IdeogramMCPError {
+export function createPredictionNotFoundError(predictionId: string): IdeogramMCPError {
   return new IdeogramMCPError(
     ERROR_CODES.PREDICTION_NOT_FOUND,
     `Prediction not found: ${predictionId}`,
@@ -336,9 +325,7 @@ export function createPredictionNotFoundError(
 /**
  * Creates an error when trying to cancel an already completed prediction.
  */
-export function createPredictionAlreadyCompletedError(
-  predictionId: string
-): IdeogramMCPError {
+export function createPredictionAlreadyCompletedError(predictionId: string): IdeogramMCPError {
   return new IdeogramMCPError(
     ERROR_CODES.PREDICTION_ALREADY_COMPLETED,
     `Prediction already completed: ${predictionId}`,
@@ -369,10 +356,7 @@ export function createPredictionFailedError(
 /**
  * Creates an error for storage operations.
  */
-export function createStorageError(
-  operation: string,
-  reason: string
-): IdeogramMCPError {
+export function createStorageError(operation: string, reason: string): IdeogramMCPError {
   return new IdeogramMCPError(
     ERROR_CODES.STORAGE_ERROR,
     `Storage error during ${operation}: ${reason}`,
@@ -386,10 +370,7 @@ export function createStorageError(
 /**
  * Creates an error for failed image downloads.
  */
-export function createDownloadFailedError(
-  url: string,
-  reason: string
-): IdeogramMCPError {
+export function createDownloadFailedError(url: string, reason: string): IdeogramMCPError {
   return new IdeogramMCPError(
     ERROR_CODES.DOWNLOAD_FAILED,
     `Failed to download image from ${url}: ${reason}`,
@@ -494,7 +475,7 @@ export function fromAxiosError(error: {
 
   // If we have structured error data
   if (data && typeof data === 'object' && 'message' in data) {
-    return fromApiErrorResponse(status, data as ApiErrorResponse);
+    return fromApiErrorResponse(status, data);
   }
 
   // Fallback to generic API error
@@ -556,10 +537,7 @@ export function isRetryableStatusCode(statusCode: number): boolean {
 /**
  * Checks if an error code matches a specific error type.
  */
-export function hasErrorCode(
-  error: unknown,
-  code: ErrorCode | string
-): boolean {
+export function hasErrorCode(error: unknown, code: ErrorCode | string): boolean {
   if (isIdeogramMCPError(error)) {
     return error.code === code;
   }

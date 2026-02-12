@@ -1,0 +1,63 @@
+# Development files
+.env
+.env.*
+*.log
+*.tsbuildinfo
+node_modules/
+
+# Source files (distのみを公開)
+src/
+tsconfig.json
+.eslintrc.json
+.prettierrc
+.prettierignore
+
+# Test files
+__tests__/
+*.test.ts
+*.spec.ts
+vitest.config.ts
+coverage/
+
+# Build tools
+esbuild.config.js
+.npmignore
+
+# Version control
+.git/
+.gitignore
+.github/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Documentation (README.md, LICENSE are included via package.json "files")
+docs/
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+
+# CI/CD
+.releaserc.json
+CHANGELOG.md
+
+# Scripts
+scripts/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# API keys and secrets
+*.key
+*.pem
+*.cert
+credentials.json

@@ -446,12 +446,7 @@ export class IdeogramClient {
     const timeout = TIMEOUTS.LONG_REQUEST_MS;
 
     // Execute with retry
-    const response = await this.executeWithRetry<EditResponse>(
-      endpoint,
-      formData,
-      timeout,
-      'edit'
-    );
+    const response = await this.executeWithRetry<EditResponse>(endpoint, formData, timeout, 'edit');
 
     // Log response
     const responseContext: ApiResponseLogContext = {
@@ -598,10 +593,7 @@ export class IdeogramClient {
    * Prepares an image input for form upload.
    * Handles URLs, base64 data URLs, and Buffers.
    */
-  private async prepareImage(
-    input: string | Buffer,
-    fieldName: string
-  ): Promise<PreparedImage> {
+  private async prepareImage(input: string | Buffer, fieldName: string): Promise<PreparedImage> {
     // Handle Buffer input
     if (Buffer.isBuffer(input)) {
       return this.prepareBufferImage(input, fieldName);
@@ -621,7 +613,7 @@ export class IdeogramClient {
     // Note: In production, you'd want to validate the path first
     throw createInvalidImageError(
       `Unsupported image input format for ${fieldName}. ` +
-      'Provide a URL, base64 data URL, or Buffer.'
+        'Provide a URL, base64 data URL, or Buffer.'
     );
   }
 
@@ -686,7 +678,7 @@ export class IdeogramClient {
 
       // Get content type from response or detect from buffer
       let contentType = response.headers['content-type']?.toString().split(';')[0];
-      if (!contentType || !contentType.startsWith('image/')) {
+      if (!contentType?.startsWith('image/')) {
         contentType = this.detectImageType(buffer);
       }
 
@@ -699,10 +691,7 @@ export class IdeogramClient {
       };
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        throw createNetworkError(
-          `Failed to download image from URL: ${error.message}`,
-          error
-        );
+        throw createNetworkError(`Failed to download image from URL: ${error.message}`, error);
       }
       throw wrapError(error);
     }
@@ -815,9 +804,7 @@ export class IdeogramClient {
  * });
  * ```
  */
-export function createIdeogramClient(
-  options?: IdeogramClientOptions
-): IdeogramClient {
+export function createIdeogramClient(options?: IdeogramClientOptions): IdeogramClient {
   return new IdeogramClient(options);
 }
 

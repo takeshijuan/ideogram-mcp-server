@@ -4,7 +4,8 @@
   "parserOptions": {
     "ecmaVersion": 2022,
     "sourceType": "module",
-    "project": "./tsconfig.json"
+    "project": "./tsconfig.json",
+    "tsconfigRootDir": "."
   },
   "env": {
     "node": true,
@@ -65,5 +66,5 @@
     "prefer-const": "error",
     "no-var": "error"
   },
-  "ignorePatterns": ["dist", "node_modules", "coverage", "*.js", "*.mjs"]
+  "ignorePatterns": ["dist", "node_modules", "coverage", "**/*.js", "**/*.mjs"]
 }

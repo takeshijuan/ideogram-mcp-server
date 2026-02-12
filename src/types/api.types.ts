@@ -56,7 +56,14 @@ export type MagicPrompt = 'AUTO' | 'ON' | 'OFF';
  * RENDER_3D: 3D rendered style (edit API only)
  * ANIME: Anime/manga style (edit API only)
  */
-export type StyleType = 'AUTO' | 'GENERAL' | 'REALISTIC' | 'DESIGN' | 'FICTION' | 'RENDER_3D' | 'ANIME';
+export type StyleType =
+  | 'AUTO'
+  | 'GENERAL'
+  | 'REALISTIC'
+  | 'DESIGN'
+  | 'FICTION'
+  | 'RENDER_3D'
+  | 'ANIME';
 
 /**
  * Ideogram model versions (for legacy V2 endpoints)
@@ -118,13 +125,7 @@ export type Resolution =
 /**
  * Prediction status for async operations (local implementation)
  */
-export type PredictionStatus =
-  | 'queued'
-  | 'processing'
-  | 'completed'
-  | 'failed'
-  | 'cancelled';
-
+export type PredictionStatus = 'queued' | 'processing' | 'completed' | 'failed' | 'cancelled';
 
 // =============================================================================
 // Request Types
@@ -171,7 +172,6 @@ export interface LegacyGenerateRequest extends BaseImageRequest {
   /** Number of images to generate (1-8) */
   num_images?: number;
 }
-
 
 // =============================================================================
 // Response Types
@@ -343,9 +343,7 @@ export const isValidAspectRatio = (value: string): value is AspectRatio => {
 /**
  * Type guard for checking if a value is a valid RenderingSpeed
  */
-export const isValidRenderingSpeed = (
-  value: string
-): value is RenderingSpeed => {
+export const isValidRenderingSpeed = (value: string): value is RenderingSpeed => {
   const validSpeeds: RenderingSpeed[] = ['FLASH', 'TURBO', 'DEFAULT', 'QUALITY'];
   return validSpeeds.includes(value as RenderingSpeed);
 };

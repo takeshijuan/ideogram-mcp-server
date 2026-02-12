@@ -103,11 +103,7 @@ export interface ServerOptions {
  * ```
  */
 export function createServer(options: ServerOptions = {}): McpServer {
-  const {
-    name = SERVER_INFO.NAME,
-    version = SERVER_INFO.VERSION,
-    toolOptions = {},
-  } = options;
+  const { name = SERVER_INFO.NAME, version = SERVER_INFO.VERSION, toolOptions = {} } = options;
 
   serverLogger.info({ name, version }, 'Creating MCP server');
 

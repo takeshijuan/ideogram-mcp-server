@@ -173,9 +173,8 @@ describe('Constants', () => {
     });
 
     it('should have edit credits higher than generate credits', async () => {
-      const { CREDITS_PER_IMAGE, EDIT_CREDITS_PER_IMAGE } = await import(
-        '../../config/constants.js'
-      );
+      const { CREDITS_PER_IMAGE, EDIT_CREDITS_PER_IMAGE } =
+        await import('../../config/constants.js');
       expect(EDIT_CREDITS_PER_IMAGE.FLASH).toBeGreaterThan(CREDITS_PER_IMAGE.FLASH);
       expect(EDIT_CREDITS_PER_IMAGE.TURBO).toBeGreaterThan(CREDITS_PER_IMAGE.TURBO);
       expect(EDIT_CREDITS_PER_IMAGE.DEFAULT).toBeGreaterThan(CREDITS_PER_IMAGE.DEFAULT);
