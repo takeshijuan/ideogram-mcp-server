@@ -48,7 +48,7 @@ jobs:
       # to avoid blocking releases unnecessarily. Moderate vulnerabilities are
       # logged and should be addressed locally. Dependabot also monitors all levels.
       - name: Security audit
-        run: npm audit --audit-level=high
+        run: npm audit --omit=dev --audit-level=high
         continue-on-error: false
 
       # 5. Type check
