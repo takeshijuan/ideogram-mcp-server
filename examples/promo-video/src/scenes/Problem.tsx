@@ -1,3 +1,4 @@
+import React from "react";
 import {
   AbsoluteFill,
   Sequence,
@@ -22,7 +23,7 @@ const CODE_LINES = [
   { text: "", color: COLORS.text },
   { text: "// Parameter validation", color: COLORS.success },
   { text: "function validateParams(params) {", color: COLORS.warning },
-  { text: "  if (!params.prompt) throw Error();", color: COLORS.text, indent: 0 },
+  { text: "  if (!params.prompt) throw Error();", color: COLORS.text },
   { text: "  if (params.width > 2048) ...", color: COLORS.text },
   { text: "}", color: COLORS.warning },
   { text: "", color: COLORS.text },

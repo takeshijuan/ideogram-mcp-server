@@ -1,3 +1,4 @@
+import React from "react";
 import {
   AbsoluteFill,
   Sequence,
@@ -309,8 +310,11 @@ const ArchitectureDiagram: React.FC = () => {
             { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
           );
 
-          const startX = ARCH_NODES[arrowIdx]!.x + 140;
-          const endX = ARCH_NODES[arrowIdx + 1]!.x - 140;
+          const startNode = ARCH_NODES[arrowIdx];
+          const endNode = ARCH_NODES[arrowIdx + 1];
+          if (!startNode || !endNode) return null;
+          const startX = startNode.x + 140;
+          const endX = endNode.x - 140;
           const currentEndX = startX + (endX - startX) * arrowProgress;
           const y = 68;
 

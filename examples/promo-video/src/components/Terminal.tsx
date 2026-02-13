@@ -1,7 +1,7 @@
+import React from "react";
 import {
   interpolate,
   useCurrentFrame,
-  useVideoConfig,
   Easing,
 } from "remotion";
 import { fontFamily } from "../styles/fonts";

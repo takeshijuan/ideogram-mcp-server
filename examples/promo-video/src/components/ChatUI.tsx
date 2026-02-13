@@ -1,3 +1,4 @@
+import React from "react";
 import {
   interpolate,
   useCurrentFrame,
@@ -30,9 +31,10 @@ const TypingText: React.FC<{
 
   if (localFrame < 0) return null;
 
+  const safeCharFrames = Math.max(1, charFrames);
   const charsToShow = Math.min(
     text.length,
-    Math.floor(localFrame / charFrames),
+    Math.floor(localFrame / safeCharFrames),
   );
 
   return <span>{text.slice(0, charsToShow)}</span>;
