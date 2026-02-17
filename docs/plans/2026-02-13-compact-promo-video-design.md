@@ -1,12 +1,12 @@
-# Compact Promo Video Design - 10s GitHub README Hero
+# Compact Promo Video Design - 10s GitHub README Hero (v2)
 
 **Date**: 2026-02-13
-**Status**: Approved
-**Goal**: Redesign the promo video from 120s to 10s for use as a GitHub README hero GIF
+**Status**: Approved (v2 - carousel with all 5 tools)
+**Goal**: 10s looping GIF showcasing all 5 MCP tools for GitHub README hero
 
 ## Overview
 
-A 10-second looping GIF that shows the core value proposition: "type natural language, get AI-generated images." Renders at 1920x1080 60fps, converts to 640x360 15fps GIF for README embedding.
+A 10-second looping GIF that showcases all 5 tools of ideogram-mcp-server through a carousel of feature cards. Renders at 1920x1080 60fps, converts to 640x360 15fps GIF for README embedding.
 
 ## Specs
 
@@ -16,72 +16,99 @@ A 10-second looping GIF that shows the core value proposition: "type natural lan
 - Format: GIF (looping)
 - Usage: `![demo](./assets/demo.gif)` in README
 
-## Structure: 4 Beats
+## Structure: Brand → 5-Card Carousel → CTA
 
-| Beat | Time | Frames | Content | Purpose |
-|------|------|--------|---------|---------|
-| 1. Brand | 0-2s | 0-120 | Project name + tagline | What is this |
-| 2. Prompt | 2-5s | 120-300 | Chat UI with typing | How it works |
-| 3. Result | 5-8s | 300-480 | Generated image + metadata | What you get |
-| 4. CTA | 8-10s | 480-600 | npm install + GitHub URL | Next action |
+| Beat | Time | Frames | Content | Transition |
+|------|------|--------|---------|------------|
+| Brand | 0-2s | 0-120 | Project name + tagline | Fade in from black (spring) |
+| Card 1 | 2-3.2s | 120-192 | Generate | Cross-fade from Brand (0.4s) |
+| Card 2 | 3.2-4.4s | 192-264 | Edit | Swipe left (0.3s) |
+| Card 3 | 4.4-5.6s | 264-336 | Async Generate | Swipe left (0.3s) |
+| Card 4 | 5.6-6.8s | 336-408 | Get Prediction | Swipe left (0.3s) |
+| Card 5 | 6.8-8s | 408-480 | Cancel Prediction | Swipe left (0.3s) |
+| CTA | 8-10s | 480-600 | install + GitHub URL | Cross-fade from Card5 (0.4s) |
 
 ## Beat Details
 
-### Beat 1: Brand (0-2s)
+### Brand (0-2s / frames 0-120)
 
 - Black background fade-in
 - `ideogram-mcp-server` in JetBrains Mono (code font), centered
 - Subtitle: `AI image generation via MCP` fades in slightly delayed
 - Spring animation for natural entrance
+- Fade-out starts at 1.8s (frame 108)
 
-### Beat 2: Prompt (2-5s)
+### Card Carousel (2-8s / frames 120-480)
 
-- Fade transition to Claude-style Chat UI
-- User bubble with typing effect: `"A sunset over mountains, photorealistic, 16:9"`
-- After typing completes, assistant side shows `Generating...` loader
+#### Common Card Layout
 
-### Beat 3: Result (5-8s)
+- Background: `COLORS.bg` (#1e1e1e)
+- Left 40%: Icon (48px) + tool name (32px, white) + description (20px, gray)
+- Right 60%: Tool-specific visual/animation
 
-- Loading disappears, gradient image (sunset) scales in with spring
-- Small metadata at bottom-right: `✓ 8s · $0.04`
-- Reuse sunset SVG gradient from existing Step3Result
+#### Card-to-Card Transition
 
-### Beat 4: CTA (8-10s)
+- Simultaneous `translateX` slide: current card `0 → -1920px`, next card `1920px → 0`
+- Easing: `Easing.inOut(Easing.cubic)`
+- Duration: 18 frames (0.3s)
+- Both cards move simultaneously (not sequential)
 
-- Fade transition to code block style
-- `npx @takeshijuan/ideogram-mcp-server`
+#### Card 1: Generate (`ideogram_generate`)
+
+- Icon: paint palette
+- Description: `"Text to image in seconds"`
+- Visual: Prompt text `"a sunset over mountains"` → sunset gradient image scales in (spring). Reuse existing sunset SVG gradient.
+
+#### Card 2: Edit (`ideogram_edit`)
+
+- Icon: pencil
+- Description: `"Mask-based inpainting"`
+- Visual: Image with dashed white rectangle (mask region) pulsing → mask area transitions to new color
+
+#### Card 3: Async Generate (`ideogram_generate_async`)
+
+- Icon: lightning bolt
+- Description: `"Background job queue"`
+- Visual: Progress bar animates 0% → 100% + three queue icons light up sequentially
+
+#### Card 4: Get Prediction (`ideogram_get_prediction`)
+
+- Icon: chart
+- Description: `"Poll job status"`
+- Visual: Status badge animates `queued` → `processing` → `completed`
+
+#### Card 5: Cancel Prediction (`ideogram_cancel_prediction`)
+
+- Icon: prohibited sign
+- Description: `"Cancel queued jobs"`
+- Visual: Queue item gets stamped with X mark animation
+
+### CTA (8-10s / frames 480-600)
+
+- Cross-fade in from Card 5 (0.4s)
+- Code block style: `npx @takeshijuan/ideogram-mcp-server`
 - Below: `github.com/takeshijuan/ideogram-mcp-server`
-- Last 0.5s: fade to black (loop connection)
+- Last 0.5s (frames 570-600): fade to black for loop connection
 
 ## File Changes
 
 ### Modify
 
-- `src/Root.tsx` - 120s → 10s (600 frames)
-- `src/Video.tsx` - Rewrite TransitionSeries for 4 beats
+- `src/scenes/CompactPromo.tsx` - Replace 4-beat design with Brand + 5-card carousel + CTA
 
-### Create
+### Keep (no changes)
 
-- `src/scenes/CompactPromo.tsx` - All 4 beats in one file
+- `src/Root.tsx` - Already 10s / 600 frames
+- `src/Video.tsx` - Already points to CompactPromo
+- `src/styles/theme.ts` - Color palette
+- `src/styles/fonts.ts` - Font settings
 
 ### Delete
 
-- `src/scenes/Problem.tsx`
-- `src/scenes/Solution.tsx`
-- `src/scenes/Demo.tsx`
-- `src/scenes/CTA.tsx`
-- `src/components/CodeBlock.tsx`
-- `src/components/Terminal.tsx`
-- `src/components/Checklist.tsx`
+- `src/components/ChatUI.tsx` - No longer needed (carousel replaces chat UI)
 
-### Keep (reuse)
+## Implementation Notes
 
-- `src/styles/theme.ts`
-- `src/styles/fonts.ts`
-- `src/components/ChatUI.tsx`
-
-## Transitions
-
-- Use `fade()` from `@remotion/transitions` between beats
-- Transition duration: 0.3s (18 frames) - shorter than before for pacing
-- End-to-start: fade to black at end, fade from black at start (loop-friendly)
+- Each FeatureCard component receives: icon, title, description, and a render prop for the visual
+- Carousel logic: single parent component tracks `activeIndex` based on frame, applies translateX transforms
+- All animations must use `useCurrentFrame()` + `interpolate()` (no CSS transitions)
