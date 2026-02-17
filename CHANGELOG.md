@@ -1,3 +1,10 @@
+## [2.1.0](https://github.com/takeshijuan/ideogram-mcp-server/compare/v2.0.0...v2.1.0) (2026-02-17)
+
+
+### ✨ Features
+
+* Remotion-based promotional video ([#9](https://github.com/takeshijuan/ideogram-mcp-server/issues/9)) ([2d56dd4](https://github.com/takeshijuan/ideogram-mcp-server/commit/2d56dd49fa8c881d558d596abff67c7b480d121e)), closes [#0c0c0](https://github.com/takeshijuan/ideogram-mcp-server/issues/0c0c0)
+
 ## [2.0.0](https://github.com/takeshijuan/ideogram-mcp-server/compare/v1.0.1...v2.0.0) (2026-02-12)
 
 
