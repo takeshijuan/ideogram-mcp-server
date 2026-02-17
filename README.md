@@ -12,6 +12,8 @@
 
 A production-grade **Model Context Protocol (MCP) server** that provides seamless integration between LLM applications (Claude Desktop, Cursor, VS Code) and the [Ideogram AI](https://ideogram.ai) image generation API.
 
+![demo](./assets/demo.gif)
+
 ## ✨ Features
 
 - **🎨 Image Generation** - Generate high-quality AI images from text prompts using Ideogram V3
