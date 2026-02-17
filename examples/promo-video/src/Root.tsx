@@ -3,9 +3,9 @@ import "./index.css";
 import { Composition } from "remotion";
 import { PromoVideo } from "./Video";
 
-// 60fps, 120 seconds = 7200 frames
+// 60fps, 10 seconds = 600 frames
 const FPS = 60;
-const DURATION_IN_SECONDS = 120;
+const DURATION_IN_SECONDS = 15;
 const WIDTH = 1920;
 const HEIGHT = 1080;
 
