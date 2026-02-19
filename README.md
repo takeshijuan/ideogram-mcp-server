@@ -1,5 +1,6 @@
 # Ideogram MCP Server
 
+[![GitHub Stars](https://img.shields.io/github/stars/takeshijuan/ideogram-mcp-server?style=social)](https://github.com/takeshijuan/ideogram-mcp-server)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Compatible-blue)](https://modelcontextprotocol.io)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org)
@@ -267,6 +268,10 @@ Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md)
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) for details.
+
+## ⭐ Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=takeshijuan/ideogram-mcp-server&type=Date)](https://star-history.com/#takeshijuan/ideogram-mcp-server&Date)
 
 ## 📚 Resources
 
