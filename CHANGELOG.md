@@ -1,3 +1,10 @@
+## [2.2.0](https://github.com/takeshijuan/ideogram-mcp-server/compare/v2.1.0...v2.2.0) (2026-02-24)
+
+
+### ✨ Features
+
+* GitHub issue templates and PR template ([#11](https://github.com/takeshijuan/ideogram-mcp-server/issues/11)) ([055b927](https://github.com/takeshijuan/ideogram-mcp-server/commit/055b927ce76cf902f97292747022ed53dcf7b508))
+
 ## [2.1.0](https://github.com/takeshijuan/ideogram-mcp-server/compare/v2.0.0...v2.1.0) (2026-02-17)
 
 
