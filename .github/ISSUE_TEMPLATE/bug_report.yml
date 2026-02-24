@@ -1,0 +1,114 @@
+name: Bug Report
+description: Report a bug or unexpected behavior with the Ideogram MCP Server
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      options:
+        - label: I am using the latest version of `@takeshijuan/ideogram-mcp-server`
+          required: true
+        - label: I have searched existing issues to avoid duplicates
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of the bug.
+      placeholder: Describe what happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Minimal steps to reproduce the behavior.
+      placeholder: |
+        1. Configure the server with...
+        2. Send a prompt to generate...
+        3. Observe the error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen.
+      placeholder: Describe what should have happened...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mcp-client
+    attributes:
+      label: MCP Client
+      description: Which MCP client are you using?
+      options:
+        - Claude Desktop
+        - Cursor
+        - VS Code (Copilot)
+        - Other (specify in additional context)
+    validations:
+      required: true
+
+  - type: input
+    id: server-version
+    attributes:
+      label: Server Version
+      description: "Version of @takeshijuan/ideogram-mcp-server (run: npm list @takeshijuan/ideogram-mcp-server)"
+      placeholder: "e.g., 2.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: node-version
+    attributes:
+      label: Node.js Version
+      description: "Run: node --version"
+      placeholder: "e.g., v20.11.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+        - macOS
+        - Windows
+        - Linux
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Server Configuration
+      description: |
+        Relevant section from your MCP client config (e.g., `claude_desktop_config.json`).
+        **IMPORTANT: Remove your API key before pasting!**
+      render: json
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Any relevant log output or error messages.
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context, screenshots, or information about the problem.
+    validations:
+      required: false
