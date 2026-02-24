@@ -39,7 +39,7 @@ Fixes #
 <!-- If this PR modifies or adds MCP tools, provide example prompts you used for testing.
      Delete this section if not applicable. -->
 
-```
+```text
 Example: "Generate an image of a mountain landscape in 16:9 aspect ratio"
 ```
 
