@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: MCP Protocol Documentation
+    url: https://modelcontextprotocol.io
+    about: Learn about the Model Context Protocol
+  - name: Ideogram API Documentation
+    url: https://developer.ideogram.ai
+    about: Read the Ideogram API documentation
+  - name: Quick Start Guide
+    url: https://github.com/takeshijuan/ideogram-mcp-server/blob/main/docs/QUICKSTART.md
+    about: Get started with the Ideogram MCP Server

@@ -1,0 +1,39 @@
+name: Question
+description: Ask a question about using or configuring the Ideogram MCP Server
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What would you like to know?
+      placeholder: Ask your question here...
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Info
+      description: |
+        If relevant, provide your environment details:
+        - Server version
+        - Node.js version
+        - MCP client (Claude Desktop, Cursor, VS Code, etc.)
+        - OS
+      placeholder: |
+        - Server version: 2.1.0
+        - Node.js: v20.11.0
+        - MCP client: Claude Desktop
+        - OS: macOS
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context that might help answer your question.
+    validations:
+      required: false
