@@ -66,9 +66,19 @@ export type StyleType =
   | 'ANIME';
 
 /**
+ * Style type options for V3 endpoints (excludes legacy-only styles).
+ */
+export type StyleTypeV3 = 'AUTO' | 'GENERAL' | 'REALISTIC' | 'DESIGN' | 'FICTION';
+
+/**
  * Ideogram model versions (for legacy V2 endpoints)
  */
 export type Model = 'V_2' | 'V_2_TURBO';
+
+/**
+ * Model versions supported by the Describe endpoint
+ */
+export type DescribeModelVersion = 'V_2' | 'V_3';
 
 /**
  * Resolution options for specific models
@@ -211,6 +221,13 @@ export interface EditResponse {
   created: string;
   /** Array of edited images */
   data: GeneratedImage[];
+}
+
+/**
+ * Response from describe endpoint
+ */
+export interface DescribeResponse {
+  descriptions: Array<{ text: string }>;
 }
 
 // =============================================================================
