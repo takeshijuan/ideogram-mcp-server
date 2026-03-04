@@ -55,6 +55,11 @@ vi.mock('../../utils/logger.js', () => {
 // Create mock functions for IdeogramClient methods
 const mockGenerate = vi.fn();
 const mockEdit = vi.fn();
+const mockDescribe = vi.fn();
+const mockUpscale = vi.fn();
+const mockRemix = vi.fn();
+const mockReframe = vi.fn();
+const mockReplaceBackground = vi.fn();
 const mockTestConnection = vi.fn();
 const mockGetMaskedApiKey = vi.fn();
 
@@ -63,18 +68,33 @@ vi.mock('../../services/ideogram.client.js', () => ({
   IdeogramClient: vi.fn().mockImplementation(() => ({
     generate: mockGenerate,
     edit: mockEdit,
+    describe: mockDescribe,
+    upscale: mockUpscale,
+    remix: mockRemix,
+    reframe: mockReframe,
+    replaceBackground: mockReplaceBackground,
     testConnection: mockTestConnection,
     getMaskedApiKey: mockGetMaskedApiKey,
   })),
   createIdeogramClient: vi.fn(() => ({
     generate: mockGenerate,
     edit: mockEdit,
+    describe: mockDescribe,
+    upscale: mockUpscale,
+    remix: mockRemix,
+    reframe: mockReframe,
+    replaceBackground: mockReplaceBackground,
     testConnection: mockTestConnection,
     getMaskedApiKey: mockGetMaskedApiKey,
   })),
   createClientWithApiKey: vi.fn(() => ({
     generate: mockGenerate,
     edit: mockEdit,
+    describe: mockDescribe,
+    upscale: mockUpscale,
+    remix: mockRemix,
+    reframe: mockReframe,
+    replaceBackground: mockReplaceBackground,
     testConnection: mockTestConnection,
     getMaskedApiKey: mockGetMaskedApiKey,
   })),
@@ -235,17 +255,22 @@ describe('MCP Server Integration', () => {
       expect(server).toBeDefined();
     });
 
-    it('should register all 5 MVP tools', () => {
+    it('should register all 10 tools', () => {
       createServer();
 
       // Verify all tools are registered
-      expect(allTools).toHaveLength(5);
+      expect(allTools).toHaveLength(10);
       const toolNames = getToolNames();
       expect(toolNames).toContain('ideogram_generate');
       expect(toolNames).toContain('ideogram_edit');
       expect(toolNames).toContain('ideogram_generate_async');
       expect(toolNames).toContain('ideogram_get_prediction');
       expect(toolNames).toContain('ideogram_cancel_prediction');
+      expect(toolNames).toContain('ideogram_describe');
+      expect(toolNames).toContain('ideogram_upscale');
+      expect(toolNames).toContain('ideogram_remix');
+      expect(toolNames).toContain('ideogram_reframe');
+      expect(toolNames).toContain('ideogram_replace_background');
     });
 
     it('should use default server info from constants', () => {

@@ -917,3 +917,461 @@ describe('Utility Functions', () => {
     });
   });
 });
+
+// =============================================================================
+// New Tool Input Schema Validation Tests
+// =============================================================================
+
+import {
+  DescribeInputSchema,
+  UpscaleInputSchema,
+  RemixInputSchema,
+  ReframeInputSchema,
+  ReplaceBackgroundInputSchema,
+} from '../../types/tool.types.js';
+
+describe('DescribeInputSchema', () => {
+  it('should accept valid minimal input', () => {
+    const result = DescribeInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should apply default describe_model_version', () => {
+    const result = DescribeInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.describe_model_version).toBe('V_3');
+    }
+  });
+
+  it('should accept V_2 model version', () => {
+    const result = DescribeInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      describe_model_version: 'V_2',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should accept V_3 model version', () => {
+    const result = DescribeInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      describe_model_version: 'V_3',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject missing image', () => {
+    const result = DescribeInputSchema.safeParse({});
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject empty image string', () => {
+    const result = DescribeInputSchema.safeParse({ image: '' });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject invalid model version', () => {
+    const result = DescribeInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      describe_model_version: 'V_1',
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('UpscaleInputSchema', () => {
+  it('should accept valid minimal input', () => {
+    const result = UpscaleInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should apply default values', () => {
+    const result = UpscaleInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.resemblance).toBe(50);
+      expect(result.data.detail).toBe(50);
+      expect(result.data.num_images).toBe(1);
+      expect(result.data.save_locally).toBe(true);
+    }
+  });
+
+  it('should accept all optional parameters', () => {
+    const result = UpscaleInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      prompt: 'High detail landscape',
+      resemblance: 70,
+      detail: 80,
+      magic_prompt: 'ON',
+      num_images: 4,
+      seed: 12345,
+      save_locally: false,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject empty image', () => {
+    const result = UpscaleInputSchema.safeParse({ image: '' });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject resemblance below 0', () => {
+    const result = UpscaleInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      resemblance: -1,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject resemblance above 100', () => {
+    const result = UpscaleInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      resemblance: 101,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should accept boundary resemblance values', () => {
+    expect(
+      UpscaleInputSchema.safeParse({
+        image: 'https://example.com/photo.jpg',
+        resemblance: 0,
+      }).success
+    ).toBe(true);
+
+    expect(
+      UpscaleInputSchema.safeParse({
+        image: 'https://example.com/photo.jpg',
+        resemblance: 100,
+      }).success
+    ).toBe(true);
+  });
+
+  it('should reject detail below 0', () => {
+    const result = UpscaleInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      detail: -1,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject detail above 100', () => {
+    const result = UpscaleInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      detail: 101,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject num_images above 8', () => {
+    const result = UpscaleInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      num_images: 9,
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('RemixInputSchema', () => {
+  it('should accept valid minimal input', () => {
+    const result = RemixInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      prompt: 'Transform into watercolor',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should apply default values', () => {
+    const result = RemixInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      prompt: 'Remix this',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.image_weight).toBe(50);
+      expect(result.data.num_images).toBe(1);
+      expect(result.data.save_locally).toBe(true);
+    }
+  });
+
+  it('should accept all optional parameters', () => {
+    const result = RemixInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      prompt: 'Cyberpunk style',
+      image_weight: 60,
+      negative_prompt: 'blur',
+      aspect_ratio: '16x9',
+      num_images: 4,
+      seed: 42,
+      rendering_speed: 'QUALITY',
+      magic_prompt: 'ON',
+      style_type: 'FICTION',
+      save_locally: false,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject missing prompt', () => {
+    const result = RemixInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject empty prompt', () => {
+    const result = RemixInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      prompt: '',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject image_weight below 0', () => {
+    const result = RemixInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      prompt: 'test',
+      image_weight: -1,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject image_weight above 100', () => {
+    const result = RemixInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      prompt: 'test',
+      image_weight: 101,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should accept boundary image_weight values', () => {
+    expect(
+      RemixInputSchema.safeParse({
+        image: 'https://example.com/photo.jpg',
+        prompt: 'test',
+        image_weight: 0,
+      }).success
+    ).toBe(true);
+
+    expect(
+      RemixInputSchema.safeParse({
+        image: 'https://example.com/photo.jpg',
+        prompt: 'test',
+        image_weight: 100,
+      }).success
+    ).toBe(true);
+  });
+
+  it('should validate all aspect ratios', () => {
+    const validRatios = [
+      '1x1', '16x9', '9x16', '4x3', '3x4', '3x2', '2x3',
+      '4x5', '5x4', '1x2', '2x1', '1x3', '3x1', '10x16', '16x10',
+    ];
+    for (const ratio of validRatios) {
+      const result = RemixInputSchema.safeParse({
+        image: 'https://example.com/photo.jpg',
+        prompt: 'test',
+        aspect_ratio: ratio,
+      });
+      expect(result.success).toBe(true);
+    }
+  });
+
+  it('should validate rendering_speed options', () => {
+    const speeds = ['FLASH', 'TURBO', 'DEFAULT', 'QUALITY'];
+    for (const speed of speeds) {
+      const result = RemixInputSchema.safeParse({
+        image: 'https://example.com/photo.jpg',
+        prompt: 'test',
+        rendering_speed: speed,
+      });
+      expect(result.success).toBe(true);
+    }
+  });
+});
+
+describe('ReframeInputSchema', () => {
+  it('should accept valid minimal input', () => {
+    const result = ReframeInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      resolution: 'RESOLUTION_1024_768',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should apply default values', () => {
+    const result = ReframeInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      resolution: 'RESOLUTION_1024_768',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.num_images).toBe(1);
+      expect(result.data.rendering_speed).toBe('DEFAULT');
+      expect(result.data.save_locally).toBe(true);
+    }
+  });
+
+  it('should accept all optional parameters', () => {
+    const result = ReframeInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      resolution: 'RESOLUTION_1920_1080',
+      num_images: 3,
+      seed: 99999,
+      rendering_speed: 'QUALITY',
+      save_locally: false,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject missing resolution', () => {
+    const result = ReframeInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject empty resolution', () => {
+    const result = ReframeInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      resolution: '',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject num_images below 1', () => {
+    const result = ReframeInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      resolution: 'RESOLUTION_1024_768',
+      num_images: 0,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject num_images above 8', () => {
+    const result = ReframeInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      resolution: 'RESOLUTION_1024_768',
+      num_images: 9,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject negative seed', () => {
+    const result = ReframeInputSchema.safeParse({
+      image: 'https://example.com/photo.jpg',
+      resolution: 'RESOLUTION_1024_768',
+      seed: -1,
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('ReplaceBackgroundInputSchema', () => {
+  it('should accept valid minimal input', () => {
+    const result = ReplaceBackgroundInputSchema.safeParse({
+      image: 'https://example.com/portrait.jpg',
+      prompt: 'A tropical beach',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should apply default values', () => {
+    const result = ReplaceBackgroundInputSchema.safeParse({
+      image: 'https://example.com/portrait.jpg',
+      prompt: 'Beach background',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.magic_prompt).toBe('AUTO');
+      expect(result.data.num_images).toBe(1);
+      expect(result.data.rendering_speed).toBe('DEFAULT');
+      expect(result.data.save_locally).toBe(true);
+    }
+  });
+
+  it('should accept all optional parameters', () => {
+    const result = ReplaceBackgroundInputSchema.safeParse({
+      image: 'https://example.com/portrait.jpg',
+      prompt: 'Mountain landscape',
+      magic_prompt: 'ON',
+      num_images: 4,
+      seed: 77777,
+      rendering_speed: 'QUALITY',
+      save_locally: false,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject missing prompt', () => {
+    const result = ReplaceBackgroundInputSchema.safeParse({
+      image: 'https://example.com/portrait.jpg',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject empty prompt', () => {
+    const result = ReplaceBackgroundInputSchema.safeParse({
+      image: 'https://example.com/portrait.jpg',
+      prompt: '',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject missing image', () => {
+    const result = ReplaceBackgroundInputSchema.safeParse({
+      prompt: 'Beach background',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject num_images above 8', () => {
+    const result = ReplaceBackgroundInputSchema.safeParse({
+      image: 'https://example.com/portrait.jpg',
+      prompt: 'test',
+      num_images: 9,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should validate rendering_speed options', () => {
+    const speeds = ['FLASH', 'TURBO', 'DEFAULT', 'QUALITY'];
+    for (const speed of speeds) {
+      const result = ReplaceBackgroundInputSchema.safeParse({
+        image: 'https://example.com/portrait.jpg',
+        prompt: 'test',
+        rendering_speed: speed,
+      });
+      expect(result.success).toBe(true);
+    }
+  });
+
+  it('should reject invalid rendering_speed', () => {
+    const result = ReplaceBackgroundInputSchema.safeParse({
+      image: 'https://example.com/portrait.jpg',
+      prompt: 'test',
+      rendering_speed: 'FAST',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should validate magic_prompt options', () => {
+    const options = ['AUTO', 'ON', 'OFF'];
+    for (const option of options) {
+      const result = ReplaceBackgroundInputSchema.safeParse({
+        image: 'https://example.com/portrait.jpg',
+        prompt: 'test',
+        magic_prompt: option,
+      });
+      expect(result.success).toBe(true);
+    }
+  });
+});
