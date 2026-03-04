@@ -27,6 +27,7 @@ import type {
   GenerateRequest,
   GenerateResponse,
   EditResponse,
+  DescribeResponse,
   RenderingSpeed,
   AspectRatio,
   ApiErrorResponse,
@@ -194,6 +195,67 @@ export interface EditParams {
    * @default 'AUTO'
    */
   styleType?: 'AUTO' | 'GENERAL' | 'REALISTIC' | 'DESIGN' | 'FICTION' | 'RENDER_3D' | 'ANIME';
+}
+
+/**
+ * Parameters for image description.
+ */
+export interface DescribeParams {
+  /**
+   * The image to describe.
+   * Can be a URL, base64 data URL, or Buffer.
+   */
+  image: string | Buffer;
+
+  /**
+   * Model version for description.
+   * @default 'V_3'
+   */
+  describeModelVersion?: 'V_2' | 'V_3';
+}
+
+/**
+ * Parameters for image upscaling.
+ */
+export interface UpscaleParams {
+  /**
+   * The image to upscale.
+   * Can be a URL, base64 data URL, or Buffer.
+   */
+  image: string | Buffer;
+
+  /**
+   * Optional guidance text for upscaling.
+   */
+  prompt?: string;
+
+  /**
+   * Similarity to original (0-100).
+   * @default 50
+   */
+  resemblance?: number;
+
+  /**
+   * Detail enhancement level (0-100).
+   * @default 50
+   */
+  detail?: number;
+
+  /**
+   * Magic prompt enhancement option.
+   */
+  magicPrompt?: 'AUTO' | 'ON' | 'OFF';
+
+  /**
+   * Number of images to generate (1-8).
+   * @default 1
+   */
+  numImages?: number;
+
+  /**
+   * Random seed for reproducible generation.
+   */
+  seed?: number;
 }
 
 /**
@@ -447,6 +509,150 @@ export class IdeogramClient {
 
     // Execute with retry
     const response = await this.executeWithRetry<EditResponse>(endpoint, formData, timeout, 'edit');
+
+    // Log response
+    const responseContext: ApiResponseLogContext = {
+      endpoint,
+      statusCode: 200,
+      durationMs: Date.now() - startTime,
+      imageCount: response.data.length,
+    };
+    logApiResponse(this.log, responseContext);
+
+    return response;
+  }
+
+  /**
+   * Describes an image, generating text descriptions.
+   *
+   * @param params - Describe parameters including the image
+   * @returns Promise resolving to text descriptions
+   * @throws {IdeogramMCPError} On validation errors, API errors, or network failures
+   *
+   * @example
+   * ```typescript
+   * const result = await client.describe({
+   *   image: 'https://example.com/photo.jpg',
+   *   describeModelVersion: 'V_3',
+   * });
+   *
+   * console.log(result.descriptions[0].text); // "A sunset over the ocean..."
+   * ```
+   */
+  async describe(params: DescribeParams): Promise<DescribeResponse> {
+    const endpoint = API_ENDPOINTS.DESCRIBE;
+    const startTime = Date.now();
+
+    // Prepare image for upload
+    const preparedImage = await this.prepareImage(params.image, 'image_file');
+
+    // Create multipart form data
+    const formData = new FormData();
+    formData.append('image_file', preparedImage.data, {
+      contentType: preparedImage.contentType,
+      filename: preparedImage.filename,
+    });
+
+    if (params.describeModelVersion !== undefined) {
+      formData.append('describe_model_version', params.describeModelVersion);
+    }
+
+    // Log request
+    const requestContext: ApiRequestLogContext = {
+      endpoint,
+      method: 'POST',
+      hasImage: true,
+      hasMask: false,
+    };
+    logApiRequest(this.log, requestContext);
+
+    // Execute with retry
+    const response = await this.executeWithRetry<DescribeResponse>(
+      endpoint,
+      formData,
+      this.timeoutMs,
+      'describe'
+    );
+
+    // Log response
+    const responseContext: ApiResponseLogContext = {
+      endpoint,
+      statusCode: 200,
+      durationMs: Date.now() - startTime,
+      imageCount: 0,
+    };
+    logApiResponse(this.log, responseContext);
+
+    return response;
+  }
+
+  /**
+   * Upscales an image with optional prompt guidance.
+   *
+   * @param params - Upscale parameters
+   * @returns Promise resolving to the upscaled image response
+   * @throws {IdeogramMCPError} On validation errors, API errors, or network failures
+   *
+   * @example
+   * ```typescript
+   * const result = await client.upscale({
+   *   image: 'https://example.com/photo.jpg',
+   *   prompt: 'High detail landscape',
+   *   resemblance: 70,
+   *   detail: 80,
+   * });
+   *
+   * console.log(result.data[0].url); // Upscaled image URL
+   * ```
+   */
+  async upscale(params: UpscaleParams): Promise<GenerateResponse> {
+    const endpoint = API_ENDPOINTS.UPSCALE;
+    const startTime = Date.now();
+
+    // Prepare image for upload
+    const preparedImage = await this.prepareImage(params.image, 'image_file');
+
+    // Build image_request JSON (legacy endpoint uses JSON wrapper)
+    const imageRequest: Record<string, unknown> = {};
+    if (params.prompt !== undefined) {
+      imageRequest['prompt'] = params.prompt;
+    }
+    imageRequest['resemblance'] = params.resemblance ?? 50;
+    imageRequest['detail'] = params.detail ?? 50;
+    if (params.magicPrompt !== undefined) {
+      imageRequest['magic_prompt_option'] = params.magicPrompt;
+    }
+    imageRequest['num_images'] = params.numImages ?? DEFAULTS.NUM_IMAGES;
+    if (params.seed !== undefined) {
+      imageRequest['seed'] = params.seed;
+    }
+
+    // Create multipart form data
+    const formData = new FormData();
+    formData.append('image_request', JSON.stringify(imageRequest), {
+      contentType: 'application/json',
+    });
+    formData.append('image_file', preparedImage.data, {
+      contentType: preparedImage.contentType,
+      filename: preparedImage.filename,
+    });
+
+    // Log request
+    const requestContext: ApiRequestLogContext = {
+      endpoint,
+      method: 'POST',
+      hasImage: true,
+      hasMask: false,
+    };
+    logApiRequest(this.log, requestContext);
+
+    // Execute with retry
+    const response = await this.executeWithRetry<GenerateResponse>(
+      endpoint,
+      formData,
+      TIMEOUTS.LONG_REQUEST_MS,
+      'upscale'
+    );
 
     // Log response
     const responseContext: ApiResponseLogContext = {
