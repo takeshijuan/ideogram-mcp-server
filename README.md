@@ -8,7 +8,7 @@
 [![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/takeshijuan/ideogram-mcp-server?utm_source=oss&utm_medium=github&utm_campaign=takeshijuan%2Fideogram-mcp-server&labelColor=171717&color=FF570A&label=CodeRabbit+Reviews)](https://coderabbit.ai)
 
 > **Warning**: This is an **unofficial**, community-driven project and is **not affiliated with, endorsed by, or sponsored by Ideogram AI**. For official Ideogram resources, please visit [ideogram.ai](https://ideogram.ai).
-
+>
 > **Note**: This project was **entirely implemented by an AI agent** (Claude) using the auto-claude autonomous development system. The codebase, tests, and documentation were all generated through AI-assisted development. Human oversight was provided for requirements and review.
 
 A production-grade **Model Context Protocol (MCP) server** that provides seamless integration between LLM applications (Claude Desktop, Cursor, VS Code) and the [Ideogram AI](https://ideogram.ai) image generation API. Powered by Ideogram V3, it offers 10 tools for complete image generation, editing, and analysis workflows.
