@@ -19,6 +19,10 @@ import type { CostEstimateOutput } from '../types/tool.types.js';
 import {
   CREDITS_PER_IMAGE,
   EDIT_CREDITS_PER_IMAGE,
+  UPSCALE_CREDITS_PER_IMAGE,
+  REMIX_CREDITS_PER_IMAGE,
+  REFRAME_CREDITS_PER_IMAGE,
+  REPLACE_BG_CREDITS_PER_IMAGE,
   USD_PER_CREDIT,
   DEFAULTS,
 } from '../config/constants.js';
@@ -155,6 +159,108 @@ export function calculateEditCost(params: EditCostParams = {}): CostEstimate {
   const creditsUsed = creditsPerImage * numImages;
 
   // Calculate estimated USD
+  const estimatedUsd = creditsUsed * USD_PER_CREDIT;
+
+  return {
+    credits_used: roundCredits(creditsUsed),
+    estimated_usd: roundUsd(estimatedUsd),
+    pricing_tier: renderingSpeed,
+    num_images: numImages,
+  };
+}
+
+// =============================================================================
+// New Operation Cost Calculation Functions
+// =============================================================================
+
+/**
+ * Parameters for calculating upscale cost.
+ */
+export interface UpscaleCostParams {
+  /**
+   * Number of images to upscale.
+   * @default 1
+   */
+  numImages?: number;
+}
+
+/**
+ * Calculates the estimated cost for an upscale operation.
+ * Upscale only supports DEFAULT pricing tier.
+ *
+ * @param params - Upscale cost parameters
+ * @returns Cost estimate with credits and USD
+ */
+export function calculateUpscaleCost(params: UpscaleCostParams = {}): CostEstimate {
+  const numImages = params.numImages ?? DEFAULTS.NUM_IMAGES;
+  const creditsPerImage = UPSCALE_CREDITS_PER_IMAGE.DEFAULT;
+  const creditsUsed = creditsPerImage * numImages;
+  const estimatedUsd = creditsUsed * USD_PER_CREDIT;
+
+  return {
+    credits_used: roundCredits(creditsUsed),
+    estimated_usd: roundUsd(estimatedUsd),
+    pricing_tier: 'DEFAULT',
+    num_images: numImages,
+  };
+}
+
+/**
+ * Calculates the estimated cost for a remix operation.
+ * Remix uses the same rates as generate operations.
+ *
+ * @param params - Remix cost parameters (same as generate)
+ * @returns Cost estimate with credits and USD
+ */
+export function calculateRemixCost(params: GenerateCostParams = {}): CostEstimate {
+  const numImages = params.numImages ?? DEFAULTS.NUM_IMAGES;
+  const renderingSpeed = params.renderingSpeed ?? DEFAULTS.RENDERING_SPEED;
+  const creditsPerImage = REMIX_CREDITS_PER_IMAGE[renderingSpeed];
+  const creditsUsed = creditsPerImage * numImages;
+  const estimatedUsd = creditsUsed * USD_PER_CREDIT;
+
+  return {
+    credits_used: roundCredits(creditsUsed),
+    estimated_usd: roundUsd(estimatedUsd),
+    pricing_tier: renderingSpeed,
+    num_images: numImages,
+  };
+}
+
+/**
+ * Calculates the estimated cost for a reframe operation.
+ * Reframe uses the same rates as edit operations.
+ *
+ * @param params - Reframe cost parameters (same as edit)
+ * @returns Cost estimate with credits and USD
+ */
+export function calculateReframeCost(params: EditCostParams = {}): CostEstimate {
+  const numImages = params.numImages ?? DEFAULTS.NUM_IMAGES;
+  const renderingSpeed = params.renderingSpeed ?? DEFAULTS.RENDERING_SPEED;
+  const creditsPerImage = REFRAME_CREDITS_PER_IMAGE[renderingSpeed];
+  const creditsUsed = creditsPerImage * numImages;
+  const estimatedUsd = creditsUsed * USD_PER_CREDIT;
+
+  return {
+    credits_used: roundCredits(creditsUsed),
+    estimated_usd: roundUsd(estimatedUsd),
+    pricing_tier: renderingSpeed,
+    num_images: numImages,
+  };
+}
+
+/**
+ * Calculates the estimated cost for a replace-background operation.
+ * Replace-background uses the same rates as edit operations.
+ *
+ * @param params - Replace-background cost parameters (same as edit)
+ * @returns Cost estimate with credits and USD
+ */
+export function calculateReplaceBgCost(params: EditCostParams = {}): CostEstimate {
+  const numImages = params.numImages ?? DEFAULTS.NUM_IMAGES;
+  const renderingSpeed = params.renderingSpeed ?? DEFAULTS.RENDERING_SPEED;
+  const creditsPerImage = REPLACE_BG_CREDITS_PER_IMAGE[renderingSpeed];
+  const creditsUsed = creditsPerImage * numImages;
   const estimatedUsd = creditsUsed * USD_PER_CREDIT;
 
   return {
@@ -484,6 +590,66 @@ export class CostCalculator {
     renderingSpeed: RenderingSpeed = DEFAULTS.RENDERING_SPEED
   ): CostEstimate {
     const cost = calculateEditCost({ numImages, renderingSpeed });
+    this.addCost(cost);
+    return cost;
+  }
+
+  /**
+   * Calculates and tracks the cost for an upscale operation.
+   *
+   * @param numImages - Number of images to upscale
+   * @returns Cost estimate for this operation
+   */
+  calculateUpscaleCost(numImages: number = 1): CostEstimate {
+    const cost = calculateUpscaleCost({ numImages });
+    this.addCost(cost);
+    return cost;
+  }
+
+  /**
+   * Calculates and tracks the cost for a remix operation.
+   *
+   * @param numImages - Number of images to generate
+   * @param renderingSpeed - Rendering speed tier
+   * @returns Cost estimate for this operation
+   */
+  calculateRemixCost(
+    numImages: number = 1,
+    renderingSpeed: RenderingSpeed = DEFAULTS.RENDERING_SPEED
+  ): CostEstimate {
+    const cost = calculateRemixCost({ numImages, renderingSpeed });
+    this.addCost(cost);
+    return cost;
+  }
+
+  /**
+   * Calculates and tracks the cost for a reframe operation.
+   *
+   * @param numImages - Number of images to generate
+   * @param renderingSpeed - Rendering speed tier
+   * @returns Cost estimate for this operation
+   */
+  calculateReframeCost(
+    numImages: number = 1,
+    renderingSpeed: RenderingSpeed = DEFAULTS.RENDERING_SPEED
+  ): CostEstimate {
+    const cost = calculateReframeCost({ numImages, renderingSpeed });
+    this.addCost(cost);
+    return cost;
+  }
+
+  /**
+   * Calculates and tracks the cost for a replace-background operation.
+   *
+   * @param numImages - Number of images to generate
+   * @param renderingSpeed - Rendering speed tier
+   * @returns Cost estimate for this operation
+   */
+  calculateReplaceBgCost(
+    numImages: number = 1,
+    renderingSpeed: RenderingSpeed = DEFAULTS.RENDERING_SPEED
+  ): CostEstimate {
+    const cost = calculateReplaceBgCost({ numImages, renderingSpeed });
     this.addCost(cost);
     return cost;
   }
