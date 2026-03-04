@@ -36,12 +36,9 @@ import {
   isValidRenderingSpeed,
   isValidMagicPrompt,
   isValidStyleType,
-  isValidEditMode,
-  isValidOutpaintDirection,
   validatePrompt,
   validateNumImages,
   validateSeed,
-  validateExpandPixels,
   validatePredictionId,
   isValidationSuccess,
   isValidationFailure,
@@ -521,31 +518,8 @@ describe('Enum Validation Helpers', () => {
     });
   });
 
-  describe('isValidEditMode', () => {
-    it('should return true for valid modes', () => {
-      expect(isValidEditMode('inpaint')).toBe(true);
-      expect(isValidEditMode('outpaint')).toBe(true);
-    });
-
-    it('should return false for invalid modes', () => {
-      expect(isValidEditMode('INPAINT')).toBe(false);
-      expect(isValidEditMode('edit')).toBe(false);
-    });
-  });
-
-  describe('isValidOutpaintDirection', () => {
-    it('should return true for valid directions', () => {
-      expect(isValidOutpaintDirection('left')).toBe(true);
-      expect(isValidOutpaintDirection('right')).toBe(true);
-      expect(isValidOutpaintDirection('up')).toBe(true);
-      expect(isValidOutpaintDirection('down')).toBe(true);
-    });
-
-    it('should return false for invalid directions', () => {
-      expect(isValidOutpaintDirection('LEFT')).toBe(false);
-      expect(isValidOutpaintDirection('center')).toBe(false);
-    });
-  });
+  // isValidEditMode and isValidOutpaintDirection have been removed
+  // as part of the V3 API migration (outpainting is now handled by reframe tool)
 });
 
 // =============================================================================
@@ -685,40 +659,8 @@ describe('Numeric Validation', () => {
     });
   });
 
-  describe('validateExpandPixels', () => {
-    it('should accept valid pixel values', () => {
-      expect(validateExpandPixels(1).success).toBe(true);
-      expect(validateExpandPixels(100).success).toBe(true);
-      expect(validateExpandPixels(VALIDATION.EXPAND_PIXELS.MAX).success).toBe(true);
-    });
-
-    it('should reject non-integer values', () => {
-      const result = validateExpandPixels(100.5);
-
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.errors[0]?.code).toBe('invalid_integer');
-      }
-    });
-
-    it('should reject values below minimum', () => {
-      const result = validateExpandPixels(0);
-
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.errors[0]?.code).toBe('expand_pixels_too_low');
-      }
-    });
-
-    it('should reject values above maximum', () => {
-      const result = validateExpandPixels(VALIDATION.EXPAND_PIXELS.MAX + 1);
-
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.errors[0]?.code).toBe('expand_pixels_too_high');
-      }
-    });
-  });
+  // validateExpandPixels has been removed as part of the V3 API migration
+  // (outpainting with expand_pixels is now handled by the reframe tool)
 });
 
 // =============================================================================

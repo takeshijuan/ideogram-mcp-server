@@ -1,14 +1,14 @@
 /**
  * ideogram_edit Tool
  *
- * Edits existing images using the Ideogram API v3 with inpainting and outpainting.
+ * Edits existing images using the Ideogram V3 API with mask-based inpainting.
  *
  * Features:
  * - Inpainting: Edit specific areas using a mask (black=edit, white=preserve)
- * - Outpainting: Expand images in specified directions (left, right, up, down)
  * - Configurable rendering speed (FLASH, TURBO, DEFAULT, QUALITY)
  * - Magic prompt enhancement options
- * - Style type selection
+ * - Style type selection (V3 subset)
+ * - Character reference images for consistency
  * - Optional local image saving
  * - Cost tracking in all responses
  *
@@ -19,16 +19,6 @@
  *   prompt: 'Add a red balloon in the sky',
  *   image: 'https://example.com/photo.jpg',
  *   mask: maskDataUrl, // Black where you want changes
- *   mode: 'inpaint',
- * });
- *
- * // Outpainting: Expand an image
- * const result = await ideogramEdit({
- *   prompt: 'Continue the landscape with mountains',
- *   image: imageBuffer,
- *   mode: 'outpaint',
- *   expand_directions: ['left', 'right'],
- *   expand_pixels: 200,
  * });
  * ```
  */
@@ -43,7 +33,7 @@ import {
   type ToolErrorOutput,
   type GeneratedImageOutput,
 } from '../types/tool.types.js';
-import type { Model } from '../types/api.types.js';
+import type { RenderingSpeed } from '../types/api.types.js';
 import {
   IdeogramClient,
   createIdeogramClient,
@@ -70,7 +60,7 @@ export const TOOL_NAME = 'ideogram_edit';
 /**
  * Tool description for MCP registration
  */
-export const TOOL_DESCRIPTION = `Edit specific parts of an existing image using inpainting with Ideogram AI.
+export const TOOL_DESCRIPTION = `Edit specific parts of an existing image using inpainting with Ideogram AI V3.
 
 Inpainting uses a mask to define which areas to modify:
 - Black pixels in mask = areas to edit/regenerate
@@ -80,9 +70,10 @@ The mask must be the same dimensions as the source image and contain only black 
 
 Features:
 - Mask-based selective editing
+- Rendering speed options: FLASH (fastest), TURBO (fast), DEFAULT (balanced), QUALITY (best quality)
 - Magic prompt enhancement to automatically improve prompts
-- Style types: AUTO, GENERAL, REALISTIC, DESIGN, FICTION, RENDER_3D, ANIME
-- Model selection: V_2 (default) or V_2_TURBO (faster)
+- Style types: AUTO, GENERAL, REALISTIC, DESIGN, FICTION
+- Character reference images for maintaining character consistency
 - Generate 1-8 variations per edit operation
 - Optional local saving of edited images
 - Cost tracking for usage monitoring
@@ -177,7 +168,7 @@ export function createEditHandler(
         prompt: input.prompt,
         hasImage: !!input.image,
         hasMask: !!input.mask,
-        model: input.model,
+        rendering_speed: input.rendering_speed,
         num_images: input.num_images,
         magic_prompt: input.magic_prompt,
         style_type: input.style_type,
@@ -195,14 +186,14 @@ export function createEditHandler(
       };
 
       // Add optional params only if defined
-      if (input.model !== undefined) {
-        editParams.model = input.model as Model;
-      }
       if (input.num_images !== undefined) {
         editParams.numImages = input.num_images;
       }
       if (input.seed !== undefined) {
         editParams.seed = input.seed;
+      }
+      if (input.rendering_speed !== undefined) {
+        editParams.renderingSpeed = input.rendering_speed as RenderingSpeed;
       }
       if (input.magic_prompt !== undefined) {
         editParams.magicPrompt = input.magic_prompt;
@@ -210,14 +201,17 @@ export function createEditHandler(
       if (input.style_type !== undefined) {
         editParams.styleType = input.style_type;
       }
+      if (input.character_reference_images !== undefined && input.character_reference_images.length > 0) {
+        editParams.characterReferenceImages = input.character_reference_images;
+      }
 
       // Call Ideogram API
       const response = await client.edit(editParams);
 
-      // Calculate cost estimate (edit operations use DEFAULT speed for legacy API)
+      // Calculate cost estimate
       const cost = calculateEditCost({
         numImages: response.data.length,
-        renderingSpeed: 'DEFAULT',
+        renderingSpeed: input.rendering_speed as RenderingSpeed,
       });
 
       // Process images and optionally save locally
@@ -385,20 +379,11 @@ export function resetDefaultHandler(): void {
  *   prompt: 'Replace the sky with a sunset',
  *   image: 'https://example.com/photo.jpg',
  *   mask: maskDataUrl,
- *   mode: 'inpaint',
- * });
- *
- * // Outpainting example
- * const result = await ideogramEdit({
- *   prompt: 'Expand the scene with more forest',
- *   image: originalImageBuffer,
- *   mode: 'outpaint',
- *   expand_directions: ['left', 'right'],
- *   expand_pixels: 150,
+ *   rendering_speed: 'DEFAULT',
  * });
  *
  * if (result.success) {
- *   console.log(`Edited ${result.num_images} images (${result.mode})`);
+ *   console.log(`Edited ${result.num_images} images`);
  *   console.log(`Cost: ${result.total_cost.credits_used} credits`);
  *   for (const image of result.images) {
  *     console.log(`  - ${image.url}`);

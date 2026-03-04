@@ -474,7 +474,7 @@ describe('MCP Server Integration', () => {
   // ===========================================================================
 
   describe('Edit Tool Integration', () => {
-    it('should execute inpaint mode successfully', async () => {
+    it('should execute edit with mask successfully', async () => {
       const mockResponse = createMockEditResponse(1);
       mockEdit.mockResolvedValueOnce(mockResponse);
 
@@ -483,29 +483,25 @@ describe('MCP Server Integration', () => {
         prompt: 'Add a tree to the scene',
         image: 'https://example.com/image.png',
         mask: 'https://example.com/mask.png',
-        mode: 'inpaint',
-      })) as { success: true; mode: string; images: Array<{ url: string }> };
+      })) as { success: true; images: Array<{ url: string }> };
 
       expect(result.success).toBe(true);
-      expect(result.mode).toBe('inpaint');
       expect(result.images).toHaveLength(1);
     });
 
-    it('should execute outpaint mode successfully', async () => {
+    it('should execute edit with rendering_speed successfully', async () => {
       const mockResponse = createMockEditResponse(1);
       mockEdit.mockResolvedValueOnce(mockResponse);
 
       const editTool = getToolByName('ideogram_edit');
       const result = (await editTool!.handler({
-        prompt: 'Expand the scene',
+        prompt: 'Edit the scene',
         image: 'https://example.com/image.png',
-        mode: 'outpaint',
-        expand_directions: ['left', 'right'],
-        expand_pixels: 200,
-      })) as { success: true; mode: string };
+        mask: 'https://example.com/mask.png',
+        rendering_speed: 'QUALITY',
+      })) as { success: true };
 
       expect(result.success).toBe(true);
-      expect(result.mode).toBe('outpaint');
     });
 
     it('should include cost tracking for edit operations', async () => {
@@ -716,7 +712,7 @@ describe('MCP Server Integration', () => {
       expect(result.num_images).toBe(4);
     });
 
-    it('should accept valid edit input with inpaint mode', async () => {
+    it('should accept valid edit input with mask', async () => {
       const mockResponse = createMockEditResponse();
       mockEdit.mockResolvedValueOnce(mockResponse);
 
@@ -725,23 +721,21 @@ describe('MCP Server Integration', () => {
         prompt: 'Add something',
         image: 'https://example.com/image.png',
         mask: 'https://example.com/mask.png',
-        mode: 'inpaint',
       })) as { success: boolean };
 
       expect(result.success).toBe(true);
     });
 
-    it('should accept valid edit input with outpaint mode', async () => {
+    it('should accept valid edit input with rendering_speed', async () => {
       const mockResponse = createMockEditResponse();
       mockEdit.mockResolvedValueOnce(mockResponse);
 
       const editTool = getToolByName('ideogram_edit');
       const result = (await editTool!.handler({
-        prompt: 'Expand the image',
+        prompt: 'Edit the image',
         image: 'https://example.com/image.png',
-        mode: 'outpaint',
-        expand_directions: ['left', 'right', 'up', 'down'],
-        expand_pixels: 500,
+        mask: 'https://example.com/mask.png',
+        rendering_speed: 'TURBO',
       })) as { success: boolean };
 
       expect(result.success).toBe(true);
@@ -957,7 +951,7 @@ describe('MCP Server Integration', () => {
       }
     });
 
-    it('should return edit results with mode information', async () => {
+    it('should return edit results with image data', async () => {
       const mockResponse = createMockEditResponse(1);
       mockEdit.mockResolvedValueOnce(mockResponse);
 
@@ -965,16 +959,13 @@ describe('MCP Server Integration', () => {
       const result = (await editTool!.handler({
         prompt: 'Edit this',
         image: 'https://example.com/image.png',
-        mode: 'inpaint',
         mask: 'https://example.com/mask.png',
       })) as {
         success: true;
-        mode: string;
         images: Array<{ url: string }>;
       };
 
       expect(result.success).toBe(true);
-      expect(result.mode).toBe('inpaint');
       expect(result.images.length).toBeGreaterThan(0);
     });
   });

@@ -770,7 +770,7 @@ describe('ideogram_edit Tool', () => {
   });
 
   describe('Edit Handler Execution', () => {
-    it('should successfully edit images in inpaint mode', async () => {
+    it('should successfully edit images with mask', async () => {
       const mockClient = {
         edit: vi.fn().mockResolvedValue(createMockEditResponse(1)),
       };
@@ -786,24 +786,21 @@ describe('ideogram_edit Tool', () => {
         prompt: 'Add a balloon',
         image: 'https://example.com/image.png',
         mask: 'https://example.com/mask.png',
-        mode: 'inpaint',
       });
 
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.images).toHaveLength(1);
-        expect(result.mode).toBe('inpaint');
         expect(result.total_cost).toBeDefined();
       }
       expect(mockClient.edit).toHaveBeenCalledWith(
         expect.objectContaining({
-          mode: 'inpaint',
           mask: 'https://example.com/mask.png',
         })
       );
     });
 
-    it('should successfully edit images in outpaint mode', async () => {
+    it('should pass rendering_speed to client', async () => {
       const mockClient = {
         edit: vi.fn().mockResolvedValue(createMockEditResponse(1)),
       };
@@ -816,22 +813,16 @@ describe('ideogram_edit Tool', () => {
       });
 
       const result = await handler({
-        prompt: 'Expand the scene',
+        prompt: 'Edit the scene',
         image: 'https://example.com/image.png',
-        mode: 'outpaint',
-        expand_directions: ['left', 'right'],
-        expand_pixels: 200,
+        mask: 'https://example.com/mask.png',
+        rendering_speed: 'QUALITY',
       });
 
       expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.mode).toBe('outpaint');
-      }
       expect(mockClient.edit).toHaveBeenCalledWith(
         expect.objectContaining({
-          mode: 'outpaint',
-          expandDirections: ['left', 'right'],
-          expandPixels: 200,
+          renderingSpeed: 'QUALITY',
         })
       );
     });
@@ -852,8 +843,6 @@ describe('ideogram_edit Tool', () => {
         prompt: 'Edit this',
         image: 'https://example.com/image.png',
         mask: 'https://example.com/mask.png',
-        mode: 'inpaint',
-        negative_prompt: 'blur',
         num_images: 2,
         seed: 54321,
         rendering_speed: 'TURBO',
@@ -865,7 +854,6 @@ describe('ideogram_edit Tool', () => {
       expect(mockClient.edit).toHaveBeenCalledWith(
         expect.objectContaining({
           prompt: 'Edit this',
-          negativePrompt: 'blur',
           numImages: 2,
           seed: 54321,
           renderingSpeed: 'TURBO',
@@ -890,6 +878,7 @@ describe('ideogram_edit Tool', () => {
       const result = await handler({
         prompt: 'Edit this',
         image: 'https://example.com/image.png',
+        mask: 'https://example.com/mask.png',
       });
 
       expect(result.success).toBe(false);
@@ -898,7 +887,7 @@ describe('ideogram_edit Tool', () => {
       }
     });
 
-    it('should default to inpaint mode when mode is not specified', async () => {
+    it('should use default rendering_speed when not specified', async () => {
       const mockClient = {
         edit: vi.fn().mockResolvedValue(createMockEditResponse(1)),
       };
@@ -913,12 +902,10 @@ describe('ideogram_edit Tool', () => {
       const result = await handler({
         prompt: 'Edit this',
         image: 'https://example.com/image.png',
+        mask: 'https://example.com/mask.png',
       });
 
       expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.mode).toBe('inpaint');
-      }
     });
   });
 });
@@ -1532,21 +1519,21 @@ describe('Tool Input Schema Validation', () => {
   });
 
   describe('Edit Input Schema', () => {
-    it('should validate minimal inpaint input', () => {
+    it('should validate minimal edit input', () => {
       const result = EDIT_TOOL_SCHEMA.safeParse({
         prompt: 'Edit this',
         image: 'https://example.com/image.png',
+        mask: 'https://example.com/mask.png',
       });
       expect(result.success).toBe(true);
     });
 
-    it('should validate outpaint input', () => {
+    it('should validate edit input with rendering_speed', () => {
       const result = EDIT_TOOL_SCHEMA.safeParse({
-        prompt: 'Expand',
+        prompt: 'Edit this',
         image: 'https://example.com/image.png',
-        mode: 'outpaint',
-        expand_directions: ['left', 'right'],
-        expand_pixels: 200,
+        mask: 'https://example.com/mask.png',
+        rendering_speed: 'QUALITY',
       });
       expect(result.success).toBe(true);
     });
@@ -1555,21 +1542,19 @@ describe('Tool Input Schema Validation', () => {
       const result = EDIT_TOOL_SCHEMA.safeParse({
         prompt: 'Edit this',
         image: '',
+        mask: 'https://example.com/mask.png',
       });
       expect(result.success).toBe(false);
     });
 
-    it('should validate expand_directions', () => {
-      const directions = ['left', 'right', 'up', 'down'];
-      for (const dir of directions) {
-        const result = EDIT_TOOL_SCHEMA.safeParse({
-          prompt: 'Expand',
-          image: 'https://example.com/image.png',
-          mode: 'outpaint',
-          expand_directions: [dir],
-        });
-        expect(result.success).toBe(true);
-      }
+    it('should validate character_reference_images', () => {
+      const result = EDIT_TOOL_SCHEMA.safeParse({
+        prompt: 'Edit this',
+        image: 'https://example.com/image.png',
+        mask: 'https://example.com/mask.png',
+        character_reference_images: ['https://example.com/ref1.png'],
+      });
+      expect(result.success).toBe(true);
     });
   });
 
@@ -2442,33 +2427,33 @@ describe('Tool Edge Cases', () => {
     });
   });
 
-  describe('Expand pixels', () => {
-    it('should accept minimum expand_pixels (1)', () => {
+  describe('Edit rendering_speed', () => {
+    it('should accept FLASH rendering_speed', () => {
       const result = EDIT_TOOL_SCHEMA.safeParse({
-        prompt: 'Expand',
+        prompt: 'Edit this',
         image: 'https://example.com/image.png',
-        mode: 'outpaint',
-        expand_pixels: 1,
+        mask: 'https://example.com/mask.png',
+        rendering_speed: 'FLASH',
       });
       expect(result.success).toBe(true);
     });
 
-    it('should accept maximum expand_pixels (1024)', () => {
+    it('should accept QUALITY rendering_speed', () => {
       const result = EDIT_TOOL_SCHEMA.safeParse({
-        prompt: 'Expand',
+        prompt: 'Edit this',
         image: 'https://example.com/image.png',
-        mode: 'outpaint',
-        expand_pixels: 1024,
+        mask: 'https://example.com/mask.png',
+        rendering_speed: 'QUALITY',
       });
       expect(result.success).toBe(true);
     });
 
-    it('should reject expand_pixels over 1024', () => {
+    it('should reject invalid rendering_speed', () => {
       const result = EDIT_TOOL_SCHEMA.safeParse({
-        prompt: 'Expand',
+        prompt: 'Edit this',
         image: 'https://example.com/image.png',
-        mode: 'outpaint',
-        expand_pixels: 1025,
+        mask: 'https://example.com/mask.png',
+        rendering_speed: 'INVALID',
       });
       expect(result.success).toBe(false);
     });

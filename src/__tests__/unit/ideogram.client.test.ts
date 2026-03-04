@@ -450,7 +450,7 @@ describe('IdeogramClient', () => {
       });
     });
 
-    it('should make POST request to edit endpoint', async () => {
+    it('should make POST request to V3 edit endpoint', async () => {
       const mockResponse = createMockEditResponse();
       mockHttpClient.post.mockResolvedValueOnce({ data: mockResponse });
 
@@ -459,7 +459,6 @@ describe('IdeogramClient', () => {
         prompt: 'Add a tree',
         image: createPngBuffer(),
         mask: createPngBuffer(),
-        mode: 'inpaint',
       });
 
       expect(mockHttpClient.post).toHaveBeenCalledWith(
@@ -482,7 +481,6 @@ describe('IdeogramClient', () => {
         prompt: 'Add a tree',
         image: createPngBuffer(),
         mask: createPngBuffer(),
-        mode: 'inpaint',
         numImages: 2,
       });
 
@@ -490,33 +488,19 @@ describe('IdeogramClient', () => {
       expect(result.data[0]?.url).toContain('edited-image');
     });
 
-    it('should throw error for inpaint mode without mask', async () => {
-      const client = new IdeogramClient({ apiKey: 'test-key' });
-
-      await expect(
-        client.edit({
-          prompt: 'Edit something',
-          image: createPngBuffer(),
-          mode: 'inpaint',
-          // No mask provided
-        })
-      ).rejects.toThrow();
-    });
-
-    it('should allow outpaint mode without mask', async () => {
+    it('should pass rendering_speed to V3 edit', async () => {
       const mockResponse = createMockEditResponse();
       mockHttpClient.post.mockResolvedValueOnce({ data: mockResponse });
 
       const client = new IdeogramClient({ apiKey: 'test-key' });
-      const result = await client.edit({
-        prompt: 'Expand the scene',
+      await client.edit({
+        prompt: 'Edit this',
         image: createPngBuffer(),
-        mode: 'outpaint',
-        expandDirections: ['left', 'right'],
-        expandPixels: 200,
+        mask: createPngBuffer(),
+        renderingSpeed: 'QUALITY',
       });
 
-      expect(result.data).toHaveLength(1);
+      expect(mockHttpClient.post).toHaveBeenCalled();
     });
 
     it('should accept image from URL', async () => {
@@ -528,7 +512,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit this',
         image: 'https://example.com/image.png',
         mask: createPngBuffer(),
-        mode: 'inpaint',
       });
 
       expect(axios.get).toHaveBeenCalledWith(
@@ -552,7 +535,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit this',
         image: dataUrl,
         mask: createPngBuffer(),
-        mode: 'inpaint',
       });
 
       expect(mockHttpClient.post).toHaveBeenCalled();
@@ -566,25 +548,8 @@ describe('IdeogramClient', () => {
           prompt: 'Edit this',
           image: '/invalid/path/image.png', // Not a URL, not base64, not Buffer
           mask: createPngBuffer(),
-          mode: 'inpaint',
         })
       ).rejects.toThrow();
-    });
-
-    it('should include expand directions for outpaint mode', async () => {
-      const mockResponse = createMockEditResponse();
-      mockHttpClient.post.mockResolvedValueOnce({ data: mockResponse });
-
-      const client = new IdeogramClient({ apiKey: 'test-key' });
-      await client.edit({
-        prompt: 'Expand',
-        image: createPngBuffer(),
-        mode: 'outpaint',
-        expandDirections: ['up', 'down'],
-        expandPixels: 150,
-      });
-
-      expect(mockHttpClient.post).toHaveBeenCalled();
     });
   });
 
@@ -602,7 +567,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: createPngBuffer(),
         mask: createPngBuffer(),
-        mode: 'inpaint',
       });
 
       expect(mockHttpClient.post).toHaveBeenCalled();
@@ -617,7 +581,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: createJpegBuffer(),
         mask: createPngBuffer(),
-        mode: 'inpaint',
       });
 
       expect(mockHttpClient.post).toHaveBeenCalled();
@@ -632,7 +595,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: createWebpBuffer(),
         mask: createPngBuffer(),
-        mode: 'inpaint',
       });
 
       expect(mockHttpClient.post).toHaveBeenCalled();
@@ -650,7 +612,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: unknownBuffer,
         mask: createPngBuffer(),
-        mode: 'inpaint',
       });
 
       expect(mockHttpClient.post).toHaveBeenCalled();
@@ -678,7 +639,6 @@ describe('IdeogramClient', () => {
           prompt: 'Edit this',
           image: largeBuffer,
           mask: createPngBuffer(),
-          mode: 'inpaint',
         })
       ).rejects.toThrow();
     });
@@ -695,7 +655,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit this',
         image: validBuffer,
         mask: createPngBuffer(),
-        mode: 'inpaint',
       });
 
       expect(result.data).toBeDefined();
@@ -818,7 +777,8 @@ describe('IdeogramClient', () => {
           prompt: 'Edit',
           image: 'https://example.com/not-found.png',
           mask: createPngBuffer(),
-          mode: 'inpaint',
+
+
         })
       ).rejects.toThrow();
     });
@@ -913,7 +873,8 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: dataUrl,
         mask: createPngBuffer(),
-        mode: 'inpaint',
+
+
       });
 
       expect(mockHttpClient.post).toHaveBeenCalled();
@@ -928,7 +889,8 @@ describe('IdeogramClient', () => {
           prompt: 'Edit',
           image: 'data:image/png,notbase64',
           mask: createPngBuffer(),
-          mode: 'inpaint',
+
+
         })
       ).rejects.toThrow();
     });
@@ -945,7 +907,8 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: dataUrl,
         mask: createPngBuffer(),
-        mode: 'inpaint',
+
+
       });
 
       expect(mockHttpClient.post).toHaveBeenCalled();
@@ -971,7 +934,8 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: 'https://example.com/image.png',
         mask: createPngBuffer(),
-        mode: 'inpaint',
+
+
       });
 
       expect(axios.get).toHaveBeenCalledWith(
@@ -996,7 +960,8 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: 'http://example.com/image.png',
         mask: createPngBuffer(),
-        mode: 'inpaint',
+
+
       });
 
       expect(axios.get).toHaveBeenCalledWith('http://example.com/image.png', expect.anything());
@@ -1017,7 +982,8 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: 'https://example.com/image',
         mask: createPngBuffer(),
-        mode: 'inpaint',
+
+
       });
 
       expect(mockHttpClient.post).toHaveBeenCalled();

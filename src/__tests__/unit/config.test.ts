@@ -89,15 +89,8 @@ describe('Constants', () => {
       ]);
     });
 
-    it('should export edit modes', async () => {
-      const { EDIT_MODES } = await import('../../config/constants.js');
-      expect(EDIT_MODES).toEqual(['inpaint', 'outpaint']);
-    });
-
-    it('should export outpaint directions', async () => {
-      const { OUTPAINT_DIRECTIONS } = await import('../../config/constants.js');
-      expect(OUTPAINT_DIRECTIONS).toEqual(['left', 'right', 'up', 'down']);
-    });
+    // Edit modes and outpaint directions removed in V3 API migration
+    // Outpainting is now handled by the reframe tool
   });
 
   describe('Default Values', () => {
@@ -109,8 +102,6 @@ describe('Constants', () => {
       expect(DEFAULTS.MAGIC_PROMPT).toBe('AUTO');
       expect(DEFAULTS.STYLE_TYPE).toBe('AUTO');
       expect(DEFAULTS.SAVE_LOCALLY).toBe(true);
-      expect(DEFAULTS.EDIT_MODE).toBe('inpaint');
-      expect(DEFAULTS.EXPAND_PIXELS).toBe(100);
     });
   });
 
