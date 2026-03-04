@@ -7,25 +7,38 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/takeshijuan/ideogram-mcp-server?utm_source=oss&utm_medium=github&utm_campaign=takeshijuan%2Fideogram-mcp-server&labelColor=171717&color=FF570A&label=CodeRabbit+Reviews)](https://coderabbit.ai)
 
-> **⚠️ Disclaimer**: This is an **unofficial**, community-driven project and is **not affiliated with, endorsed by, or sponsored by Ideogram AI**. For official Ideogram resources, please visit [ideogram.ai](https://ideogram.ai).
+> **Warning**: This is an **unofficial**, community-driven project and is **not affiliated with, endorsed by, or sponsored by Ideogram AI**. For official Ideogram resources, please visit [ideogram.ai](https://ideogram.ai).
 
-> **🤖 AI-Generated Project**: This project was **entirely implemented by an AI agent** (Claude) using the auto-claude autonomous development system. The codebase, tests, and documentation were all generated through AI-assisted development. Human oversight was provided for requirements and review.
+> **Note**: This project was **entirely implemented by an AI agent** (Claude) using the auto-claude autonomous development system. The codebase, tests, and documentation were all generated through AI-assisted development. Human oversight was provided for requirements and review.
 
-A production-grade **Model Context Protocol (MCP) server** that provides seamless integration between LLM applications (Claude Desktop, Cursor, VS Code) and the [Ideogram AI](https://ideogram.ai) image generation API.
+A production-grade **Model Context Protocol (MCP) server** that provides seamless integration between LLM applications (Claude Desktop, Cursor, VS Code) and the [Ideogram AI](https://ideogram.ai) image generation API. Powered by Ideogram V3, it offers 10 tools for complete image generation, editing, and analysis workflows.
 
 ![demo](./assets/demo.gif)
 
-## ✨ Features
+## What's New in v3.0.0
 
-- **🎨 Image Generation** - Generate high-quality AI images from text prompts using Ideogram V3
-- **✏️ Image Inpainting** - Edit specific parts of images using mask-based inpainting
-- **⚡ Async Support** - Queue generation requests for background processing
-- **💰 Cost Tracking** - Estimated credit and USD costs included in all responses
-- **📁 Local Storage** - Automatically save generated images locally (URLs expire)
-- **🔄 Enterprise Error Handling** - User-friendly messages with retry guidance
-- **🛡️ Type Safety** - Full TypeScript strict mode with Zod validation
+- **5 New Tools** -- Describe, Upscale, Remix, Reframe, and Replace Background (10 tools total)
+- **Character Reference Support** -- Maintain visual consistency of characters across generations (generate, edit, remix)
+- **Ideogram V3 API** -- Edit tool migrated from legacy API to V3 with rendering speed control
+- **Reframe replaces Outpainting** -- Intelligent outpainting is now a dedicated tool with resolution targeting
 
-## 🚀 Quick Start
+## Features
+
+- **Image Generation** - Generate high-quality AI images from text prompts using Ideogram V3
+- **Image Editing** - Mask-based inpainting to edit specific parts of images (V3 API)
+- **Image Description** - Analyze images and generate detailed text descriptions
+- **Image Upscaling** - Enhance image resolution with guided upscaling controls
+- **Image Remixing** - Transform images with new prompts while preserving original characteristics
+- **Image Reframing** - Extend images to new resolutions via intelligent outpainting
+- **Background Replacement** - Automatically replace backgrounds while preserving foreground subjects
+- **Character References** - Maintain character consistency across multiple generations
+- **Async Support** - Queue generation requests for background processing
+- **Cost Tracking** - Estimated credit and USD costs included in all responses
+- **Local Storage** - Automatically save generated images locally (URLs expire)
+- **Enterprise Error Handling** - User-friendly messages with retry guidance
+- **Type Safety** - Full TypeScript strict mode with Zod validation
+
+## Quick Start
 
 ### Prerequisites
 
@@ -86,7 +99,7 @@ Add to your Claude Desktop configuration file:
 
 Restart Claude Desktop to load the server.
 
-## 🛠️ Available Tools
+## Available Tools (10)
 
 ### `ideogram_generate`
 
@@ -106,6 +119,7 @@ Generate images from text prompts.
   rendering_speed: "QUALITY", // FLASH, TURBO, DEFAULT, QUALITY
   magic_prompt: "ON",      // AUTO, ON, OFF - enhance prompts
   style_type: "REALISTIC", // AUTO, GENERAL, REALISTIC, DESIGN, FICTION
+  character_reference_images: ["https://example.com/char.jpg"],
   save_locally: true       // Save to local disk
 }
 ```
@@ -115,9 +129,9 @@ Generate images from text prompts.
 - Seeds for reproducibility
 - Cost estimates (credits and USD)
 
-### `ideogram_inpaint`
+### `ideogram_edit`
 
-Edit specific parts of existing images using inpainting with masks.
+Edit specific parts of existing images using mask-based inpainting (V3 API).
 
 ```typescript
 // Edit parts of an image using a mask
@@ -125,10 +139,11 @@ Edit specific parts of existing images using inpainting with masks.
   prompt: "Add a red balloon in the sky",
   image: "https://example.com/photo.jpg",  // URL, file path, or base64 data URL
   mask: maskImageData,  // Black pixels=edit, White pixels=preserve
-  model: "V_2",  // or "V_2_TURBO" for faster processing
-  num_images: 1,  // Generate 1-8 variations
-  magic_prompt: "AUTO",  // AUTO, ON, or OFF
-  style_type: "AUTO"  // AUTO, GENERAL, REALISTIC, DESIGN, FICTION, RENDER_3D, ANIME
+  rendering_speed: "DEFAULT",  // FLASH, TURBO, DEFAULT, QUALITY
+  character_reference_images: ["https://example.com/char.jpg"],
+  num_images: 1,
+  magic_prompt: "AUTO",
+  style_type: "AUTO"
 }
 ```
 
@@ -137,6 +152,81 @@ Edit specific parts of existing images using inpainting with masks.
 - Black and white pixels only (black=areas to edit, white=areas to preserve)
 - Black area must be at least 10% of total image
 - Supported formats: PNG, JPEG, WebP
+
+### `ideogram_describe`
+
+Generate text descriptions from images.
+
+```typescript
+{
+  image: "https://example.com/photo.jpg",  // URL, file path, or base64
+  describe_model_version: "V_3"  // "V_2" or "V_3" (default)
+}
+// Returns: array of text descriptions
+```
+
+### `ideogram_upscale`
+
+Upscale images to higher resolution.
+
+```typescript
+{
+  image: "https://example.com/photo.jpg",
+  prompt: "High detail landscape",  // Optional guided upscaling
+  resemblance: 70,  // 0-100: similarity to original (default 50)
+  detail: 80,       // 0-100: detail enhancement level (default 50)
+  magic_prompt: "ON",
+  num_images: 1,
+  save_locally: true
+}
+```
+
+### `ideogram_remix`
+
+Remix images with a new text prompt.
+
+```typescript
+{
+  image: "https://example.com/photo.jpg",
+  prompt: "Transform into a watercolor painting",
+  image_weight: 60,  // 0-100: influence of original image (default 50)
+  aspect_ratio: "16x9",
+  rendering_speed: "QUALITY",
+  style_type: "FICTION",
+  character_reference_images: ["https://example.com/char.jpg"],
+  save_locally: true
+}
+```
+
+### `ideogram_reframe`
+
+Extend images to new resolutions via intelligent outpainting.
+
+```typescript
+{
+  image: "https://example.com/square-photo.jpg",
+  resolution: "1920x1080",  // Target resolution (required)
+  rendering_speed: "DEFAULT",
+  num_images: 1,
+  save_locally: true
+}
+```
+
+### `ideogram_replace_background`
+
+Replace image backgrounds while preserving foreground subjects.
+
+```typescript
+{
+  image: "https://example.com/portrait.jpg",
+  prompt: "A tropical beach at sunset",  // Describe the new background
+  magic_prompt: "ON",
+  rendering_speed: "QUALITY",
+  num_images: 4,
+  save_locally: true
+}
+// No mask needed - AI auto-detects foreground
+```
 
 ### `ideogram_generate_async`
 
@@ -174,7 +264,7 @@ Cancel queued async requests (before processing starts).
 // Only works for predictions in 'queued' status
 ```
 
-## 📊 Cost Tracking
+## Cost Tracking
 
 All generation responses include estimated cost information:
 
@@ -190,7 +280,7 @@ All generation responses include estimated cost information:
 
 > **Note:** Costs are **estimated locally** based on known pricing. The Ideogram API does not return actual cost information.
 
-## 🔧 Development
+## Development
 
 ```bash
 # Development with hot reload
@@ -215,7 +305,7 @@ npm run format
 npm run inspect
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 ideogram-mcp-server/
@@ -228,10 +318,15 @@ ideogram-mcp-server/
 │   │   ├── cost.calculator.ts    # Cost estimation
 │   │   ├── prediction.store.ts   # Async job queue
 │   │   └── storage.service.ts    # Local file storage
-│   ├── tools/            # MCP tools
+│   ├── tools/            # MCP tools (10 tools)
 │   │   ├── generate.ts
 │   │   ├── generate-async.ts
 │   │   ├── edit.ts
+│   │   ├── describe.ts
+│   │   ├── upscale.ts
+│   │   ├── remix.ts
+│   │   ├── reframe.ts
+│   │   ├── replace-background.ts
 │   │   ├── get-prediction.ts
 │   │   └── cancel-prediction.ts
 │   ├── types/            # TypeScript types
@@ -241,14 +336,14 @@ ideogram-mcp-server/
 └── package.json
 ```
 
-## 🔐 Security
+## Security
 
 - API keys are passed via environment variables, never stored in code
 - All inputs validated with Zod schemas
 - File operations restricted to configured directories
 - No sensitive data logged
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details on:
 
@@ -265,16 +360,17 @@ Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+## License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## ⭐ Star History
+## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=takeshijuan/ideogram-mcp-server&type=Date)](https://star-history.com/#takeshijuan/ideogram-mcp-server&Date)
 
-## 📚 Resources
+## Resources
 
+- [API Reference](docs/API.md) - Complete documentation for all 10 tools
 - [Ideogram API Documentation](https://developer.ideogram.ai/api)
 - [Model Context Protocol](https://modelcontextprotocol.io)
 - [MCP SDK Documentation](https://github.com/modelcontextprotocol/typescript-sdk)
@@ -282,4 +378,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-Built with ❤️ for the AI developer community
+Built with love for the AI developer community
