@@ -259,6 +259,66 @@ export interface UpscaleParams {
 }
 
 /**
+ * Parameters for image remixing.
+ */
+export interface RemixParams {
+  /** The source image to remix */
+  image: string | Buffer;
+  /** Text prompt describing the desired remix */
+  prompt: string;
+  /** How much influence the original image has (0-100) */
+  imageWeight?: number;
+  /** Negative prompt */
+  negativePrompt?: string;
+  /** Aspect ratio */
+  aspectRatio?: string;
+  /** Number of images (1-8) */
+  numImages?: number;
+  /** Random seed */
+  seed?: number;
+  /** Rendering speed */
+  renderingSpeed?: RenderingSpeed;
+  /** Magic prompt option */
+  magicPrompt?: 'AUTO' | 'ON' | 'OFF';
+  /** Style type (V3 subset) */
+  styleType?: StyleType;
+}
+
+/**
+ * Parameters for image reframing.
+ */
+export interface ReframeParams {
+  /** The source image to reframe */
+  image: string | Buffer;
+  /** Target resolution (e.g. "1024x768") */
+  resolution: string;
+  /** Number of images (1-8) */
+  numImages?: number;
+  /** Random seed */
+  seed?: number;
+  /** Rendering speed */
+  renderingSpeed?: RenderingSpeed;
+}
+
+/**
+ * Parameters for background replacement.
+ */
+export interface ReplaceBackgroundParams {
+  /** The source image */
+  image: string | Buffer;
+  /** Description of desired new background */
+  prompt: string;
+  /** Magic prompt option */
+  magicPrompt?: 'AUTO' | 'ON' | 'OFF';
+  /** Number of images (1-8) */
+  numImages?: number;
+  /** Random seed */
+  seed?: number;
+  /** Rendering speed */
+  renderingSpeed?: RenderingSpeed;
+}
+
+/**
  * Image input that has been prepared for form upload.
  */
 interface PreparedImage {
@@ -655,6 +715,211 @@ export class IdeogramClient {
     );
 
     // Log response
+    const responseContext: ApiResponseLogContext = {
+      endpoint,
+      statusCode: 200,
+      durationMs: Date.now() - startTime,
+      imageCount: response.data.length,
+    };
+    logApiResponse(this.log, responseContext);
+
+    return response;
+  }
+
+  /**
+   * Remixes an existing image based on a new prompt.
+   *
+   * @param params - Remix parameters including image and prompt
+   * @returns Promise resolving to the remixed image response
+   * @throws {IdeogramMCPError} On validation errors, API errors, or network failures
+   *
+   * @example
+   * ```typescript
+   * const result = await client.remix({
+   *   image: 'https://example.com/photo.jpg',
+   *   prompt: 'Transform into a watercolor painting',
+   *   imageWeight: 60,
+   * });
+   *
+   * console.log(result.data[0].url); // Remixed image URL
+   * ```
+   */
+  async remix(params: RemixParams): Promise<GenerateResponse> {
+    const endpoint = API_ENDPOINTS.REMIX_V3;
+    const startTime = Date.now();
+
+    // Prepare image for upload
+    const preparedImage = await this.prepareImage(params.image, 'image');
+
+    // Create multipart form data (V3 uses flat fields)
+    const formData = new FormData();
+    formData.append('image', preparedImage.data, {
+      contentType: preparedImage.contentType,
+      filename: preparedImage.filename,
+    });
+    formData.append('prompt', params.prompt);
+    formData.append('image_weight', String(params.imageWeight ?? 50));
+    formData.append('num_images', String(params.numImages ?? DEFAULTS.NUM_IMAGES));
+    formData.append('rendering_speed', params.renderingSpeed ?? DEFAULTS.RENDERING_SPEED);
+    formData.append('magic_prompt', params.magicPrompt ?? DEFAULTS.MAGIC_PROMPT);
+
+    if (params.negativePrompt !== undefined) {
+      formData.append('negative_prompt', params.negativePrompt);
+    }
+    const normalizedAspectRatio = this.normalizeAspectRatio(params.aspectRatio);
+    if (normalizedAspectRatio !== undefined) {
+      formData.append('aspect_ratio', normalizedAspectRatio);
+    }
+    if (params.seed !== undefined) {
+      formData.append('seed', String(params.seed));
+    }
+    if (params.styleType !== undefined) {
+      formData.append('style_type', params.styleType);
+    }
+
+    const requestContext: ApiRequestLogContext = {
+      endpoint,
+      method: 'POST',
+      hasImage: true,
+      hasMask: false,
+    };
+    logApiRequest(this.log, requestContext);
+
+    const timeout = this.getTimeoutForRenderingSpeed(params.renderingSpeed);
+    const response = await this.executeWithRetry<GenerateResponse>(
+      endpoint,
+      formData,
+      timeout,
+      'remix'
+    );
+
+    const responseContext: ApiResponseLogContext = {
+      endpoint,
+      statusCode: 200,
+      durationMs: Date.now() - startTime,
+      imageCount: response.data.length,
+    };
+    logApiResponse(this.log, responseContext);
+
+    return response;
+  }
+
+  /**
+   * Reframes an image to a new resolution via intelligent outpainting.
+   *
+   * @param params - Reframe parameters including image and target resolution
+   * @returns Promise resolving to the reframed image response
+   * @throws {IdeogramMCPError} On validation errors, API errors, or network failures
+   *
+   * @example
+   * ```typescript
+   * const result = await client.reframe({
+   *   image: 'https://example.com/photo.jpg',
+   *   resolution: 'RESOLUTION_1024_768',
+   * });
+   *
+   * console.log(result.data[0].url); // Reframed image URL
+   * ```
+   */
+  async reframe(params: ReframeParams): Promise<GenerateResponse> {
+    const endpoint = API_ENDPOINTS.REFRAME_V3;
+    const startTime = Date.now();
+
+    const preparedImage = await this.prepareImage(params.image, 'image');
+
+    const formData = new FormData();
+    formData.append('image', preparedImage.data, {
+      contentType: preparedImage.contentType,
+      filename: preparedImage.filename,
+    });
+    formData.append('resolution', params.resolution);
+    formData.append('num_images', String(params.numImages ?? DEFAULTS.NUM_IMAGES));
+    formData.append('rendering_speed', params.renderingSpeed ?? DEFAULTS.RENDERING_SPEED);
+
+    if (params.seed !== undefined) {
+      formData.append('seed', String(params.seed));
+    }
+
+    const requestContext: ApiRequestLogContext = {
+      endpoint,
+      method: 'POST',
+      hasImage: true,
+      hasMask: false,
+    };
+    logApiRequest(this.log, requestContext);
+
+    const timeout = this.getTimeoutForRenderingSpeed(params.renderingSpeed);
+    const response = await this.executeWithRetry<GenerateResponse>(
+      endpoint,
+      formData,
+      timeout,
+      'reframe'
+    );
+
+    const responseContext: ApiResponseLogContext = {
+      endpoint,
+      statusCode: 200,
+      durationMs: Date.now() - startTime,
+      imageCount: response.data.length,
+    };
+    logApiResponse(this.log, responseContext);
+
+    return response;
+  }
+
+  /**
+   * Replaces the background of an image while preserving the foreground subject.
+   *
+   * @param params - Replace background parameters including image and prompt
+   * @returns Promise resolving to the modified image response
+   * @throws {IdeogramMCPError} On validation errors, API errors, or network failures
+   *
+   * @example
+   * ```typescript
+   * const result = await client.replaceBackground({
+   *   image: 'https://example.com/portrait.jpg',
+   *   prompt: 'A tropical beach at sunset',
+   * });
+   *
+   * console.log(result.data[0].url); // Image with replaced background
+   * ```
+   */
+  async replaceBackground(params: ReplaceBackgroundParams): Promise<GenerateResponse> {
+    const endpoint = API_ENDPOINTS.REPLACE_BACKGROUND_V3;
+    const startTime = Date.now();
+
+    const preparedImage = await this.prepareImage(params.image, 'image');
+
+    const formData = new FormData();
+    formData.append('image', preparedImage.data, {
+      contentType: preparedImage.contentType,
+      filename: preparedImage.filename,
+    });
+    formData.append('prompt', params.prompt);
+    formData.append('magic_prompt', params.magicPrompt ?? DEFAULTS.MAGIC_PROMPT);
+    formData.append('num_images', String(params.numImages ?? DEFAULTS.NUM_IMAGES));
+    formData.append('rendering_speed', params.renderingSpeed ?? DEFAULTS.RENDERING_SPEED);
+
+    if (params.seed !== undefined) {
+      formData.append('seed', String(params.seed));
+    }
+
+    const requestContext: ApiRequestLogContext = {
+      endpoint,
+      method: 'POST',
+      hasImage: true,
+      hasMask: false,
+    };
+    logApiRequest(this.log, requestContext);
+
+    const timeout = this.getTimeoutForRenderingSpeed(params.renderingSpeed);
+    const response = await this.executeWithRetry<GenerateResponse>(
+      endpoint,
+      formData,
+      timeout,
+      'replaceBackground'
+    );
+
     const responseContext: ApiResponseLogContext = {
       endpoint,
       statusCode: 200,
