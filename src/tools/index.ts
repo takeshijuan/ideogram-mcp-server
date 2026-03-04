@@ -108,6 +108,81 @@ export {
   type CancelPredictionToolSchema,
 } from './cancel-prediction.js';
 
+// Describe Tool
+export {
+  TOOL_NAME as DESCRIBE_TOOL_NAME,
+  TOOL_DESCRIPTION as DESCRIBE_TOOL_DESCRIPTION,
+  TOOL_SCHEMA as DESCRIBE_TOOL_SCHEMA,
+  createDescribeHandler,
+  getDefaultHandler as getDescribeDefaultHandler,
+  resetDefaultHandler as resetDescribeDefaultHandler,
+  ideogramDescribe,
+  ideogramDescribeTool,
+  type DescribeToolOptions,
+  type DescribeToolResult,
+  type DescribeToolSchema,
+} from './describe.js';
+
+// Upscale Tool
+export {
+  TOOL_NAME as UPSCALE_TOOL_NAME,
+  TOOL_DESCRIPTION as UPSCALE_TOOL_DESCRIPTION,
+  TOOL_SCHEMA as UPSCALE_TOOL_SCHEMA,
+  createUpscaleHandler,
+  getDefaultHandler as getUpscaleDefaultHandler,
+  resetDefaultHandler as resetUpscaleDefaultHandler,
+  ideogramUpscale,
+  ideogramUpscaleTool,
+  type UpscaleToolOptions,
+  type UpscaleToolResult,
+  type UpscaleToolSchema,
+} from './upscale.js';
+
+// Remix Tool
+export {
+  TOOL_NAME as REMIX_TOOL_NAME,
+  TOOL_DESCRIPTION as REMIX_TOOL_DESCRIPTION,
+  TOOL_SCHEMA as REMIX_TOOL_SCHEMA,
+  createRemixHandler,
+  getDefaultHandler as getRemixDefaultHandler,
+  resetDefaultHandler as resetRemixDefaultHandler,
+  ideogramRemix,
+  ideogramRemixTool,
+  type RemixToolOptions,
+  type RemixToolResult,
+  type RemixToolSchema,
+} from './remix.js';
+
+// Reframe Tool
+export {
+  TOOL_NAME as REFRAME_TOOL_NAME,
+  TOOL_DESCRIPTION as REFRAME_TOOL_DESCRIPTION,
+  TOOL_SCHEMA as REFRAME_TOOL_SCHEMA,
+  createReframeHandler,
+  getDefaultHandler as getReframeDefaultHandler,
+  resetDefaultHandler as resetReframeDefaultHandler,
+  ideogramReframe,
+  ideogramReframeTool,
+  type ReframeToolOptions,
+  type ReframeToolResult,
+  type ReframeToolSchema,
+} from './reframe.js';
+
+// Replace Background Tool
+export {
+  TOOL_NAME as REPLACE_BACKGROUND_TOOL_NAME,
+  TOOL_DESCRIPTION as REPLACE_BACKGROUND_TOOL_DESCRIPTION,
+  TOOL_SCHEMA as REPLACE_BACKGROUND_TOOL_SCHEMA,
+  createReplaceBackgroundHandler,
+  getDefaultHandler as getReplaceBackgroundDefaultHandler,
+  resetDefaultHandler as resetReplaceBackgroundDefaultHandler,
+  ideogramReplaceBackground,
+  ideogramReplaceBackgroundTool,
+  type ReplaceBackgroundToolOptions,
+  type ReplaceBackgroundToolResult,
+  type ReplaceBackgroundToolSchema,
+} from './replace-background.js';
+
 // =============================================================================
 // Tool Definition Type
 // =============================================================================
@@ -148,6 +223,11 @@ import { ideogramEditTool } from './edit.js';
 import { ideogramGenerateAsyncTool } from './generate-async.js';
 import { ideogramGetPredictionTool } from './get-prediction.js';
 import { ideogramCancelPredictionTool } from './cancel-prediction.js';
+import { ideogramDescribeTool } from './describe.js';
+import { ideogramUpscaleTool } from './upscale.js';
+import { ideogramRemixTool } from './remix.js';
+import { ideogramReframeTool } from './reframe.js';
+import { ideogramReplaceBackgroundTool } from './replace-background.js';
 
 /**
  * Array of all tool definitions for easy iteration.
@@ -167,6 +247,11 @@ export const allTools = [
   ideogramGenerateAsyncTool,
   ideogramGetPredictionTool,
   ideogramCancelPredictionTool,
+  ideogramDescribeTool,
+  ideogramUpscaleTool,
+  ideogramRemixTool,
+  ideogramReframeTool,
+  ideogramReplaceBackgroundTool,
 ] as const;
 
 /**
@@ -268,6 +353,11 @@ export function resetAllHandlers(): void {
   import('./generate-async.js').then(({ resetDefaultHandler }) => resetDefaultHandler());
   import('./get-prediction.js').then(({ resetDefaultHandler }) => resetDefaultHandler());
   import('./cancel-prediction.js').then(({ resetDefaultHandler }) => resetDefaultHandler());
+  import('./describe.js').then(({ resetDefaultHandler }) => resetDefaultHandler());
+  import('./upscale.js').then(({ resetDefaultHandler }) => resetDefaultHandler());
+  import('./remix.js').then(({ resetDefaultHandler }) => resetDefaultHandler());
+  import('./reframe.js').then(({ resetDefaultHandler }) => resetDefaultHandler());
+  import('./replace-background.js').then(({ resetDefaultHandler }) => resetDefaultHandler());
 }
 
 // =============================================================================
@@ -295,7 +385,7 @@ export interface RegisterToolsOptions {
  *
  * This is the recommended way to set up the server. It:
  * - Initializes the shared prediction store for async tools
- * - Registers all 5 MVP tools with the server
+ * - Registers all 10 tools with the server
  *
  * @param server - The MCP server instance
  * @param options - Optional configuration
@@ -319,6 +409,11 @@ export interface RegisterToolsOptions {
  * // - ideogram_generate_async
  * // - ideogram_get_prediction
  * // - ideogram_cancel_prediction
+ * // - ideogram_describe
+ * // - ideogram_upscale
+ * // - ideogram_remix
+ * // - ideogram_reframe
+ * // - ideogram_replace_background
  * ```
  */
 export function registerTools(server: McpServer, options: RegisterToolsOptions = {}): void {
