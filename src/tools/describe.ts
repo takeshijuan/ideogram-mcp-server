@@ -130,9 +130,7 @@ export function createDescribeHandler(
   /**
    * Tool handler implementation
    */
-  return async function ideogramDescribeHandler(
-    input: DescribeInput
-  ): Promise<DescribeToolResult> {
+  return async function ideogramDescribeHandler(input: DescribeInput): Promise<DescribeToolResult> {
     const startTime = Date.now();
 
     // Log tool invocation

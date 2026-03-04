@@ -777,8 +777,6 @@ describe('IdeogramClient', () => {
           prompt: 'Edit',
           image: 'https://example.com/not-found.png',
           mask: createPngBuffer(),
-
-
         })
       ).rejects.toThrow();
     });
@@ -873,8 +871,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: dataUrl,
         mask: createPngBuffer(),
-
-
       });
 
       expect(mockHttpClient.post).toHaveBeenCalled();
@@ -889,8 +885,6 @@ describe('IdeogramClient', () => {
           prompt: 'Edit',
           image: 'data:image/png,notbase64',
           mask: createPngBuffer(),
-
-
         })
       ).rejects.toThrow();
     });
@@ -907,8 +901,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: dataUrl,
         mask: createPngBuffer(),
-
-
       });
 
       expect(mockHttpClient.post).toHaveBeenCalled();
@@ -934,8 +926,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: 'https://example.com/image.png',
         mask: createPngBuffer(),
-
-
       });
 
       expect(axios.get).toHaveBeenCalledWith(
@@ -960,8 +950,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: 'http://example.com/image.png',
         mask: createPngBuffer(),
-
-
       });
 
       expect(axios.get).toHaveBeenCalledWith('http://example.com/image.png', expect.anything());
@@ -982,8 +970,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: 'https://example.com/image',
         mask: createPngBuffer(),
-
-
       });
 
       expect(mockHttpClient.post).toHaveBeenCalled();
@@ -1019,10 +1005,7 @@ describe('IdeogramClient', () => {
 
     it('should return descriptions from API', async () => {
       const mockResponse = {
-        descriptions: [
-          { text: 'First description' },
-          { text: 'Second description' },
-        ],
+        descriptions: [{ text: 'First description' }, { text: 'Second description' }],
       };
       mockHttpClient.post.mockResolvedValueOnce({ data: mockResponse });
 
@@ -1162,9 +1145,7 @@ describe('IdeogramClient', () => {
       });
 
       const client = new IdeogramClient({ apiKey: 'test-key' });
-      await expect(
-        client.remix({ image: createPngBuffer(), prompt: 'test' })
-      ).rejects.toThrow();
+      await expect(client.remix({ image: createPngBuffer(), prompt: 'test' })).rejects.toThrow();
     });
   });
 

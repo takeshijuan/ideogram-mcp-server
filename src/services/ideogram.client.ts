@@ -605,7 +605,10 @@ export class IdeogramClient {
     }
 
     // Append character reference images if provided
-    if (params.characterReferenceImages !== undefined && params.characterReferenceImages.length > 0) {
+    if (
+      params.characterReferenceImages !== undefined &&
+      params.characterReferenceImages.length > 0
+    ) {
       for (const charRef of params.characterReferenceImages) {
         const prepared = await this.prepareImage(charRef, 'character_reference_images');
         formData.append('character_reference_images', prepared.data, {
@@ -838,7 +841,10 @@ export class IdeogramClient {
     }
 
     // Append character reference images if provided
-    if (params.characterReferenceImages !== undefined && params.characterReferenceImages.length > 0) {
+    if (
+      params.characterReferenceImages !== undefined &&
+      params.characterReferenceImages.length > 0
+    ) {
       for (const charRef of params.characterReferenceImages) {
         const prepared = await this.prepareImage(charRef, 'character_reference_images');
         formData.append('character_reference_images', prepared.data, {

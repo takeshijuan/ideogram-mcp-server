@@ -1114,8 +1114,21 @@ describe('RemixInputSchema', () => {
 
   it('should validate all aspect ratios', () => {
     const validRatios = [
-      '1x1', '16x9', '9x16', '4x3', '3x4', '3x2', '2x3',
-      '4x5', '5x4', '1x2', '2x1', '1x3', '3x1', '10x16', '16x10',
+      '1x1',
+      '16x9',
+      '9x16',
+      '4x3',
+      '3x4',
+      '3x2',
+      '2x3',
+      '4x5',
+      '5x4',
+      '1x2',
+      '2x1',
+      '1x3',
+      '3x1',
+      '10x16',
+      '16x10',
     ];
     for (const ratio of validRatios) {
       const result = RemixInputSchema.safeParse({

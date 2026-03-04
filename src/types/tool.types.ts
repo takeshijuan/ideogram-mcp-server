@@ -73,13 +73,7 @@ export const StyleTypeSchema = z.enum([
 /**
  * Style type for V3 endpoints (no RENDER_3D or ANIME)
  */
-export const StyleTypeV3Schema = z.enum([
-  'AUTO',
-  'GENERAL',
-  'REALISTIC',
-  'DESIGN',
-  'FICTION',
-]);
+export const StyleTypeV3Schema = z.enum(['AUTO', 'GENERAL', 'REALISTIC', 'DESIGN', 'FICTION']);
 
 /**
  * Model versions for legacy endpoints.
@@ -274,10 +268,7 @@ export const UpscaleInputSchema = z.object({
   image: z.string().min(1, 'Image is required'),
 
   /** Optional guidance text for upscaling */
-  prompt: z
-    .string()
-    .max(10000, 'Prompt must be 10000 characters or less')
-    .optional(),
+  prompt: z.string().max(10000, 'Prompt must be 10000 characters or less').optional(),
 
   /** Similarity to original (0-100) */
   resemblance: z

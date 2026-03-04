@@ -201,7 +201,10 @@ export function createEditHandler(
       if (input.style_type !== undefined) {
         editParams.styleType = input.style_type;
       }
-      if (input.character_reference_images !== undefined && input.character_reference_images.length > 0) {
+      if (
+        input.character_reference_images !== undefined &&
+        input.character_reference_images.length > 0
+      ) {
         editParams.characterReferenceImages = input.character_reference_images;
       }
 
