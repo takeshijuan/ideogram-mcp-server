@@ -71,6 +71,17 @@ export const StyleTypeSchema = z.enum([
 ]);
 
 /**
+ * Style type for V3 endpoints (no RENDER_3D or ANIME)
+ */
+export const StyleTypeV3Schema = z.enum([
+  'AUTO',
+  'GENERAL',
+  'REALISTIC',
+  'DESIGN',
+  'FICTION',
+]);
+
+/**
  * Model versions for legacy endpoints.
  */
 export const ModelSchema = z.enum(['V_2', 'V_2_TURBO']);
@@ -136,6 +147,12 @@ export const GenerateInputSchema = z.object({
   /** Style type for the image */
   style_type: StyleTypeSchema.optional().default('AUTO'),
 
+  /** Character reference images for maintaining character consistency across generations */
+  character_reference_images: z
+    .array(z.string().min(1, 'Image reference is required'))
+    .max(5, 'Maximum 5 character reference images')
+    .optional(),
+
   /** Whether to save generated images locally */
   save_locally: z.boolean().optional().default(true),
 });
@@ -151,7 +168,7 @@ export const GenerateAsyncInputSchema = GenerateInputSchema.extend({
 
 /**
  * Input schema for ideogram_edit tool.
- * Supports inpainting (mask-based editing) and outpainting (image expansion).
+ * Uses V3 API for mask-based inpainting with rendering speed control.
  */
 export const EditInputSchema = z.object({
   /** Text prompt describing the desired changes */
@@ -165,12 +182,9 @@ export const EditInputSchema = z.object({
 
   /**
    * Mask image for inpainting: black=edit, white=preserve
-   * REQUIRED for inpainting
+   * REQUIRED for all edit operations
    */
   mask: z.string().min(1, 'Mask is required'),
-
-  /** Model to use for editing (V_2 or V_2_TURBO) */
-  model: ModelSchema.optional().default('V_2'),
 
   /** Number of images to generate (1-8) */
   num_images: z
@@ -189,11 +203,20 @@ export const EditInputSchema = z.object({
     .max(2147483647, 'Seed must be at most 2147483647')
     .optional(),
 
+  /** Rendering speed/quality tradeoff */
+  rendering_speed: RenderingSpeedSchema.optional().default('DEFAULT'),
+
   /** Magic prompt enhancement option */
   magic_prompt: MagicPromptSchema.optional().default('AUTO'),
 
-  /** Style type for the image */
-  style_type: StyleTypeSchema.optional().default('AUTO'),
+  /** Style type for the image (V3 subset) */
+  style_type: StyleTypeV3Schema.optional().default('AUTO'),
+
+  /** Character reference images for maintaining character consistency */
+  character_reference_images: z
+    .array(z.string().min(1, 'Image reference is required'))
+    .max(5, 'Maximum 5 character reference images')
+    .optional(),
 
   /** Whether to save generated images locally */
   save_locally: z.boolean().optional().default(true),
@@ -220,17 +243,6 @@ export const CancelPredictionInputSchema = z.object({
 // =============================================================================
 // V3 Tool Shared Schema Components
 // =============================================================================
-
-/**
- * Style type for V3 endpoints (no RENDER_3D or ANIME)
- */
-export const StyleTypeV3Schema = z.enum([
-  'AUTO',
-  'GENERAL',
-  'REALISTIC',
-  'DESIGN',
-  'FICTION',
-]);
 
 /**
  * Describe model version options.
@@ -366,6 +378,12 @@ export const RemixInputSchema = z.object({
 
   /** Style type for the image (V3 subset) */
   style_type: StyleTypeV3Schema.optional(),
+
+  /** Character reference images for maintaining character consistency across generations */
+  character_reference_images: z
+    .array(z.string().min(1, 'Image reference is required'))
+    .max(5, 'Maximum 5 character reference images')
+    .optional(),
 
   /** Whether to save generated images locally */
   save_locally: z.boolean().optional().default(true),

@@ -204,6 +204,9 @@ export function createGenerateHandler(
       if (input.style_type !== undefined) {
         generateParams.styleType = input.style_type;
       }
+      if (input.character_reference_images !== undefined && input.character_reference_images.length > 0) {
+        generateParams.characterReferenceImages = input.character_reference_images;
+      }
 
       // Call Ideogram API
       const response = await client.generate(generateParams);

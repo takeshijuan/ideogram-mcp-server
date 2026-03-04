@@ -31,7 +31,6 @@ import type {
   RenderingSpeed,
   AspectRatio,
   ApiErrorResponse,
-  Model,
   StyleType,
 } from '../types/api.types.js';
 import {
@@ -143,10 +142,16 @@ export interface GenerateParams {
    * @default 'AUTO'
    */
   styleType?: StyleType;
+
+  /**
+   * Character reference images for maintaining character consistency.
+   * Can be URLs, base64 data URLs, or Buffers.
+   */
+  characterReferenceImages?: (string | Buffer)[];
 }
 
 /**
- * Parameters for image editing (inpainting only).
+ * Parameters for image editing (V3 inpainting).
  */
 export interface EditParams {
   /**
@@ -168,12 +173,6 @@ export interface EditParams {
   mask: string | Buffer;
 
   /**
-   * Model to use for editing.
-   * @default 'V_2'
-   */
-  model?: Model;
-
-  /**
    * Number of images to generate (1-8).
    * @default 1
    */
@@ -185,16 +184,28 @@ export interface EditParams {
   seed?: number;
 
   /**
+   * Rendering speed/quality tradeoff.
+   * @default 'DEFAULT'
+   */
+  renderingSpeed?: RenderingSpeed;
+
+  /**
    * Magic prompt enhancement option.
    * @default 'AUTO'
    */
   magicPrompt?: 'AUTO' | 'ON' | 'OFF';
 
   /**
-   * Style type for the image.
+   * Style type for the image (V3 subset).
    * @default 'AUTO'
    */
-  styleType?: 'AUTO' | 'GENERAL' | 'REALISTIC' | 'DESIGN' | 'FICTION' | 'RENDER_3D' | 'ANIME';
+  styleType?: 'AUTO' | 'GENERAL' | 'REALISTIC' | 'DESIGN' | 'FICTION';
+
+  /**
+   * Character reference images for maintaining character consistency.
+   * Can be URLs, base64 data URLs, or Buffers.
+   */
+  characterReferenceImages?: (string | Buffer)[];
 }
 
 /**
@@ -282,6 +293,8 @@ export interface RemixParams {
   magicPrompt?: 'AUTO' | 'ON' | 'OFF';
   /** Style type (V3 subset) */
   styleType?: StyleType;
+  /** Character reference images for maintaining character consistency */
+  characterReferenceImages?: (string | Buffer)[];
 }
 
 /**
@@ -439,36 +452,74 @@ export class IdeogramClient {
     const endpoint = API_ENDPOINTS.GENERATE_V3;
     const startTime = Date.now();
 
-    // Build the image_request JSON with only defined fields
-    const imageRequest: GenerateRequest = {
-      prompt: params.prompt,
-      num_images: params.numImages ?? DEFAULTS.NUM_IMAGES,
-      rendering_speed: params.renderingSpeed ?? DEFAULTS.RENDERING_SPEED,
-      magic_prompt: params.magicPrompt ?? DEFAULTS.MAGIC_PROMPT,
-      style_type: params.styleType ?? DEFAULTS.STYLE_TYPE,
-    };
+    // Determine if we need FormData (when character reference images are provided)
+    const hasCharacterRefs =
+      params.characterReferenceImages !== undefined && params.characterReferenceImages.length > 0;
 
-    // Add optional fields only if defined (exactOptionalPropertyTypes compliance)
-    const normalizedAspectRatio = this.normalizeAspectRatio(params.aspectRatio);
-    if (normalizedAspectRatio !== undefined) {
-      imageRequest.aspect_ratio = normalizedAspectRatio;
-    }
-    if (params.negativePrompt !== undefined) {
-      imageRequest.negative_prompt = params.negativePrompt;
-    }
-    if (params.seed !== undefined) {
-      imageRequest.seed = params.seed;
-    }
+    let requestBody: FormData | GenerateRequest;
 
-    // Create JSON request body
-    // V3 API expects fields at top level, not wrapped in image_request
-    const requestBody = imageRequest;
+    if (hasCharacterRefs) {
+      // Build FormData for multipart request with character reference images
+      const formData = new FormData();
+      formData.append('prompt', params.prompt);
+      formData.append('num_images', String(params.numImages ?? DEFAULTS.NUM_IMAGES));
+      formData.append('rendering_speed', params.renderingSpeed ?? DEFAULTS.RENDERING_SPEED);
+      formData.append('magic_prompt', params.magicPrompt ?? DEFAULTS.MAGIC_PROMPT);
+      formData.append('style_type', params.styleType ?? DEFAULTS.STYLE_TYPE);
+
+      const normalizedAspectRatio = this.normalizeAspectRatio(params.aspectRatio);
+      if (normalizedAspectRatio !== undefined) {
+        formData.append('aspect_ratio', normalizedAspectRatio);
+      }
+      if (params.negativePrompt !== undefined) {
+        formData.append('negative_prompt', params.negativePrompt);
+      }
+      if (params.seed !== undefined) {
+        formData.append('seed', String(params.seed));
+      }
+
+      // Append character reference images (guarded by hasCharacterRefs above)
+      if (params.characterReferenceImages !== undefined) {
+        for (const charRef of params.characterReferenceImages) {
+          const prepared = await this.prepareImage(charRef, 'character_reference_images');
+          formData.append('character_reference_images', prepared.data, {
+            contentType: prepared.contentType,
+            filename: prepared.filename,
+          });
+        }
+      }
+
+      requestBody = formData;
+    } else {
+      // Build JSON request body (no character reference images)
+      const imageRequest: GenerateRequest = {
+        prompt: params.prompt,
+        num_images: params.numImages ?? DEFAULTS.NUM_IMAGES,
+        rendering_speed: params.renderingSpeed ?? DEFAULTS.RENDERING_SPEED,
+        magic_prompt: params.magicPrompt ?? DEFAULTS.MAGIC_PROMPT,
+        style_type: params.styleType ?? DEFAULTS.STYLE_TYPE,
+      };
+
+      // Add optional fields only if defined (exactOptionalPropertyTypes compliance)
+      const normalizedAspectRatio = this.normalizeAspectRatio(params.aspectRatio);
+      if (normalizedAspectRatio !== undefined) {
+        imageRequest.aspect_ratio = normalizedAspectRatio;
+      }
+      if (params.negativePrompt !== undefined) {
+        imageRequest.negative_prompt = params.negativePrompt;
+      }
+      if (params.seed !== undefined) {
+        imageRequest.seed = params.seed;
+      }
+
+      requestBody = imageRequest;
+    }
 
     // Log request
     const requestContext: ApiRequestLogContext = {
       endpoint,
       method: 'POST',
-      hasImage: false,
+      hasImage: hasCharacterRefs,
       hasMask: false,
     };
     logApiRequest(this.log, requestContext);
@@ -521,21 +572,29 @@ export class IdeogramClient {
    * ```
    */
   async edit(params: EditParams): Promise<EditResponse> {
-    const endpoint = API_ENDPOINTS.EDIT_LEGACY;
+    const endpoint = API_ENDPOINTS.EDIT_V3;
     const startTime = Date.now();
 
     // Prepare image for upload
     const preparedImage = await this.prepareImage(params.image, 'image');
 
-    // Prepare mask (always required for inpainting)
+    // Prepare mask (always required for V3 edit)
     const preparedMask = await this.prepareImage(params.mask, 'mask');
 
-    // Create multipart form data with flat fields (no JSON wrapper)
+    // Create multipart form data with V3 flat fields
     const formData = new FormData();
+    formData.append('image', preparedImage.data, {
+      contentType: preparedImage.contentType,
+      filename: preparedImage.filename,
+    });
+    formData.append('mask', preparedMask.data, {
+      contentType: preparedMask.contentType,
+      filename: preparedMask.filename,
+    });
     formData.append('prompt', params.prompt);
-    formData.append('model', params.model ?? 'V_2');
-    formData.append('magic_prompt_option', params.magicPrompt ?? DEFAULTS.MAGIC_PROMPT);
     formData.append('num_images', String(params.numImages ?? DEFAULTS.NUM_IMAGES));
+    formData.append('rendering_speed', params.renderingSpeed ?? DEFAULTS.RENDERING_SPEED);
+    formData.append('magic_prompt', params.magicPrompt ?? DEFAULTS.MAGIC_PROMPT);
 
     // Add optional fields only if defined
     if (params.seed !== undefined) {
@@ -545,15 +604,16 @@ export class IdeogramClient {
       formData.append('style_type', params.styleType);
     }
 
-    // Append image and mask
-    formData.append('image_file', preparedImage.data, {
-      contentType: preparedImage.contentType,
-      filename: preparedImage.filename,
-    });
-    formData.append('mask', preparedMask.data, {
-      contentType: preparedMask.contentType,
-      filename: preparedMask.filename,
-    });
+    // Append character reference images if provided
+    if (params.characterReferenceImages !== undefined && params.characterReferenceImages.length > 0) {
+      for (const charRef of params.characterReferenceImages) {
+        const prepared = await this.prepareImage(charRef, 'character_reference_images');
+        formData.append('character_reference_images', prepared.data, {
+          contentType: prepared.contentType,
+          filename: prepared.filename,
+        });
+      }
+    }
 
     // Log request
     const requestContext: ApiRequestLogContext = {
@@ -564,8 +624,8 @@ export class IdeogramClient {
     };
     logApiRequest(this.log, requestContext);
 
-    // Use default timeout (legacy API doesn't have rendering speed param)
-    const timeout = TIMEOUTS.LONG_REQUEST_MS;
+    // Use rendering speed-based timeout
+    const timeout = this.getTimeoutForRenderingSpeed(params.renderingSpeed);
 
     // Execute with retry
     const response = await this.executeWithRetry<EditResponse>(endpoint, formData, timeout, 'edit');
@@ -775,6 +835,17 @@ export class IdeogramClient {
     }
     if (params.styleType !== undefined) {
       formData.append('style_type', params.styleType);
+    }
+
+    // Append character reference images if provided
+    if (params.characterReferenceImages !== undefined && params.characterReferenceImages.length > 0) {
+      for (const charRef of params.characterReferenceImages) {
+        const prepared = await this.prepareImage(charRef, 'character_reference_images');
+        formData.append('character_reference_images', prepared.data, {
+          contentType: prepared.contentType,
+          filename: prepared.filename,
+        });
+      }
     }
 
     const requestContext: ApiRequestLogContext = {

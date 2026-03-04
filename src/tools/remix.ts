@@ -219,6 +219,9 @@ export function createRemixHandler(
       if (input.style_type !== undefined) {
         remixParams.styleType = input.style_type;
       }
+      if (input.character_reference_images !== undefined && input.character_reference_images.length > 0) {
+        remixParams.characterReferenceImages = input.character_reference_images;
+      }
 
       // Call Ideogram API
       const response = await client.remix(remixParams);
