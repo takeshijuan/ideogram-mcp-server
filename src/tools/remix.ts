@@ -1,31 +1,35 @@
 /**
- * ideogram_generate Tool
+ * ideogram_remix Tool
  *
- * Generates images from text prompts using the Ideogram API v3.
+ * Remixes existing images based on a new prompt using the Ideogram API v3.
  *
  * Features:
+ * - Remix images with new text prompts
+ * - Configurable image weight (influence of original image)
  * - Supports all 15 aspect ratios (using "x" format like "16x9")
  * - Configurable rendering speed (FLASH, TURBO, DEFAULT, QUALITY)
  * - Magic prompt enhancement options
- * - Style type selection
+ * - Style type selection (V3 subset)
  * - Optional local image saving
  * - Cost tracking in all responses
  *
  * @example
  * ```typescript
  * // Basic usage
- * const result = await ideogramGenerate({
- *   prompt: 'A beautiful sunset over mountains',
+ * const result = await ideogramRemix({
+ *   image: 'https://example.com/photo.jpg',
+ *   prompt: 'Transform into a watercolor painting',
  * });
  *
  * // With all options
- * const result = await ideogramGenerate({
- *   prompt: 'A cute cat wearing a wizard hat',
+ * const result = await ideogramRemix({
+ *   image: 'https://example.com/photo.jpg',
+ *   prompt: 'A cyberpunk version of this scene',
+ *   image_weight: 60,
  *   aspect_ratio: '16x9',
- *   num_images: 4,
  *   rendering_speed: 'QUALITY',
  *   magic_prompt: 'ON',
- *   style_type: 'REALISTIC',
+ *   style_type: 'FICTION',
  *   save_locally: true,
  * });
  * ```
@@ -35,9 +39,9 @@ import type { Logger } from 'pino';
 import type { z } from 'zod';
 
 import {
-  GenerateInputSchema,
-  type GenerateInput,
-  type GenerateOutput,
+  RemixInputSchema,
+  type RemixInput,
+  type RemixOutput,
   type ToolErrorOutput,
   type GeneratedImageOutput,
 } from '../types/tool.types.js';
@@ -47,7 +51,7 @@ import {
   createIdeogramClient,
   type IdeogramClientOptions,
 } from '../services/ideogram.client.js';
-import { calculateCost, toCostEstimateOutput } from '../services/cost.calculator.js';
+import { calculateRemixCost, toCostEstimateOutput } from '../services/cost.calculator.js';
 import {
   StorageService,
   createStorageService,
@@ -63,39 +67,43 @@ import { createChildLogger, logToolInvocation, logToolResult, logError } from '.
 /**
  * Tool name for MCP registration
  */
-export const TOOL_NAME = 'ideogram_generate';
+export const TOOL_NAME = 'ideogram_remix';
 
 /**
  * Tool description for MCP registration
  */
-export const TOOL_DESCRIPTION = `Generate images from text prompts using Ideogram AI v3.
+export const TOOL_DESCRIPTION = `Remix an existing image based on a new text prompt using Ideogram AI v3.
 
-Creates high-quality AI-generated images based on text descriptions. Supports various aspect ratios, rendering quality levels, and style options.
+Takes an existing image and transforms it according to a new text description, blending the original image with the new concept.
 
 Features:
+- Image weight control (0-100): how much influence the original image has
 - 15 aspect ratio options (1x1, 16x9, 9x16, 4x3, 3x4, 3x2, 2x3, 4x5, 5x4, 1x2, 2x1, 1x3, 3x1, 10x16, 16x10)
 - Rendering speed options: FLASH (fastest), TURBO (fast), DEFAULT (balanced), QUALITY (best quality)
 - Magic prompt enhancement to automatically improve prompts
 - Style types: AUTO, GENERAL, REALISTIC, DESIGN, FICTION
-- Generate 1-8 images per request
-- Optional local saving of generated images
+- Negative prompt support
+- Generate 1-8 remixed images per request
+- Optional local saving of remixed images
 - Cost tracking for usage monitoring
 
-Returns image URLs, seeds for reproducibility, and cost estimates.`;
+Input image can be provided as a URL, file path, or base64 data URL.
+
+Returns remixed image URLs, seeds for reproducibility, and cost estimates.`;
 
 /**
  * Tool input schema for MCP registration
  */
-export const TOOL_SCHEMA = GenerateInputSchema;
+export const TOOL_SCHEMA = RemixInputSchema;
 
 // =============================================================================
 // Types
 // =============================================================================
 
 /**
- * Configuration options for the generate tool handler
+ * Configuration options for the remix tool handler
  */
-export interface GenerateToolOptions {
+export interface RemixToolOptions {
   /**
    * Custom IdeogramClient instance
    */
@@ -123,16 +131,16 @@ export interface GenerateToolOptions {
 }
 
 /**
- * Result type from the generate tool
+ * Result type from the remix tool
  */
-export type GenerateToolResult = GenerateOutput | ToolErrorOutput;
+export type RemixToolResult = RemixOutput | ToolErrorOutput;
 
 // =============================================================================
 // Tool Handler Factory
 // =============================================================================
 
 /**
- * Creates a handler function for the ideogram_generate tool.
+ * Creates a handler function for the ideogram_remix tool.
  *
  * @param options - Configuration options for the handler
  * @returns The tool handler function
@@ -140,26 +148,26 @@ export type GenerateToolResult = GenerateOutput | ToolErrorOutput;
  * @example
  * ```typescript
  * // Create handler with default options
- * const handler = createGenerateHandler();
+ * const handler = createRemixHandler();
  *
  * // Create handler with custom client
- * const handler = createGenerateHandler({
+ * const handler = createRemixHandler({
  *   client: new IdeogramClient({ apiKey: 'my-key' }),
  * });
  * ```
  */
-export function createGenerateHandler(
-  options: GenerateToolOptions = {}
-): (input: GenerateInput) => Promise<GenerateToolResult> {
+export function createRemixHandler(
+  options: RemixToolOptions = {}
+): (input: RemixInput) => Promise<RemixToolResult> {
   // Initialize dependencies
-  const log = options.logger ?? createChildLogger('tool:generate');
+  const log = options.logger ?? createChildLogger('tool:remix');
   const client = options.client ?? createIdeogramClient(options.clientOptions);
   const storage = options.storage ?? createStorageService(options.storageOptions);
 
   /**
    * Tool handler implementation
    */
-  return async function ideogramGenerateHandler(input: GenerateInput): Promise<GenerateToolResult> {
+  return async function ideogramRemixHandler(input: RemixInput): Promise<RemixToolResult> {
     const startTime = Date.now();
 
     // Log tool invocation
@@ -167,6 +175,9 @@ export function createGenerateHandler(
       tool: TOOL_NAME,
       params: {
         prompt: input.prompt,
+        hasImage: !!input.image,
+        image_weight: input.image_weight,
+        negative_prompt: input.negative_prompt,
         aspect_ratio: input.aspect_ratio,
         num_images: input.num_images,
         rendering_speed: input.rendering_speed,
@@ -177,45 +188,49 @@ export function createGenerateHandler(
     });
 
     try {
-      // Build generate params, only including defined optional fields
+      // Build remix params, only including defined optional fields
       // (required for exactOptionalPropertyTypes compliance)
-      const generateParams: Parameters<typeof client.generate>[0] = {
+      const remixParams: Parameters<typeof client.remix>[0] = {
+        image: input.image,
         prompt: input.prompt,
       };
 
+      if (input.image_weight !== undefined) {
+        remixParams.imageWeight = input.image_weight;
+      }
       if (input.negative_prompt !== undefined) {
-        generateParams.negativePrompt = input.negative_prompt;
+        remixParams.negativePrompt = input.negative_prompt;
       }
       if (input.aspect_ratio !== undefined) {
-        generateParams.aspectRatio = input.aspect_ratio;
+        remixParams.aspectRatio = input.aspect_ratio;
       }
       if (input.num_images !== undefined) {
-        generateParams.numImages = input.num_images;
+        remixParams.numImages = input.num_images;
       }
       if (input.seed !== undefined) {
-        generateParams.seed = input.seed;
+        remixParams.seed = input.seed;
       }
       if (input.rendering_speed !== undefined) {
-        generateParams.renderingSpeed = input.rendering_speed as RenderingSpeed;
+        remixParams.renderingSpeed = input.rendering_speed as RenderingSpeed;
       }
       if (input.magic_prompt !== undefined) {
-        generateParams.magicPrompt = input.magic_prompt;
+        remixParams.magicPrompt = input.magic_prompt;
       }
       if (input.style_type !== undefined) {
-        generateParams.styleType = input.style_type;
+        remixParams.styleType = input.style_type;
       }
       if (
         input.character_reference_images !== undefined &&
         input.character_reference_images.length > 0
       ) {
-        generateParams.characterReferenceImages = input.character_reference_images;
+        remixParams.characterReferenceImages = input.character_reference_images;
       }
 
       // Call Ideogram API
-      const response = await client.generate(generateParams);
+      const response = await client.remix(remixParams);
 
       // Calculate cost estimate
-      const cost = calculateCost({
+      const cost = calculateRemixCost({
         numImages: response.data.length,
         renderingSpeed: input.rendering_speed as RenderingSpeed,
       });
@@ -230,7 +245,7 @@ export function createGenerateHandler(
         // Download and save all images in parallel
         const urls = response.data.map((img) => img.url);
         const saveResult = await storage.downloadImages(urls, {
-          prefix: 'generated',
+          prefix: 'remixed',
         });
 
         // Map results back to images
@@ -286,7 +301,7 @@ export function createGenerateHandler(
       }
 
       // Build successful response
-      const result: GenerateOutput = {
+      const result: RemixOutput = {
         success: true,
         created: response.created,
         images,
@@ -308,7 +323,7 @@ export function createGenerateHandler(
           creditsUsed: result.total_cost.credits_used,
           durationMs,
         },
-        'Generation completed successfully'
+        'Remix completed successfully'
       );
 
       return result;
@@ -318,7 +333,7 @@ export function createGenerateHandler(
 
       // Log failure
       const durationMs = Date.now() - startTime;
-      logError(log, mcpError, 'Generation failed', {
+      logError(log, mcpError, 'Remix failed', {
         tool: TOOL_NAME,
         durationMs,
       });
@@ -343,16 +358,16 @@ export function createGenerateHandler(
  * Default handler instance using environment configuration.
  * Created lazily on first access to allow config to be loaded.
  */
-let defaultHandler: ((input: GenerateInput) => Promise<GenerateToolResult>) | null = null;
+let defaultHandler: ((input: RemixInput) => Promise<RemixToolResult>) | null = null;
 
 /**
  * Gets the default handler instance, creating it if necessary.
  *
  * @returns The default handler function
  */
-export function getDefaultHandler(): (input: GenerateInput) => Promise<GenerateToolResult> {
+export function getDefaultHandler(): (input: RemixInput) => Promise<RemixToolResult> {
   if (!defaultHandler) {
-    defaultHandler = createGenerateHandler();
+    defaultHandler = createRemixHandler();
   }
   return defaultHandler;
 }
@@ -370,24 +385,25 @@ export function resetDefaultHandler(): void {
 // =============================================================================
 
 /**
- * Generates images from a text prompt using the default configuration.
+ * Remixes an image using the default configuration.
  *
  * This is a convenience function that uses the default handler.
- * For custom configuration, use `createGenerateHandler()` instead.
+ * For custom configuration, use `createRemixHandler()` instead.
  *
- * @param input - The generation input parameters
- * @returns Promise resolving to the generation result
+ * @param input - The remix input parameters
+ * @returns Promise resolving to the remix result
  *
  * @example
  * ```typescript
- * const result = await ideogramGenerate({
- *   prompt: 'A serene Japanese garden with cherry blossoms',
- *   aspect_ratio: '16x9',
- *   num_images: 2,
+ * const result = await ideogramRemix({
+ *   image: 'https://example.com/photo.jpg',
+ *   prompt: 'Transform into anime style',
+ *   image_weight: 60,
+ *   rendering_speed: 'QUALITY',
  * });
  *
  * if (result.success) {
- *   console.log(`Generated ${result.num_images} images`);
+ *   console.log(`Remixed ${result.num_images} images`);
  *   console.log(`Cost: ${result.total_cost.credits_used} credits`);
  *   for (const image of result.images) {
  *     console.log(`  - ${image.url}`);
@@ -397,7 +413,7 @@ export function resetDefaultHandler(): void {
  * }
  * ```
  */
-export async function ideogramGenerate(input: GenerateInput): Promise<GenerateToolResult> {
+export async function ideogramRemix(input: RemixInput): Promise<RemixToolResult> {
   return getDefaultHandler()(input);
 }
 
@@ -417,26 +433,26 @@ export async function ideogramGenerate(input: GenerateInput): Promise<GenerateTo
  * @example
  * ```typescript
  * import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
- * import { ideogramGenerateTool } from './tools/generate.js';
+ * import { ideogramRemixTool } from './tools/remix.js';
  *
  * const server = new McpServer({ name: 'ideogram', version: '1.0.0' });
  *
  * server.tool(
- *   ideogramGenerateTool.name,
- *   ideogramGenerateTool.description,
- *   ideogramGenerateTool.schema,
- *   ideogramGenerateTool.handler
+ *   ideogramRemixTool.name,
+ *   ideogramRemixTool.description,
+ *   ideogramRemixTool.schema,
+ *   ideogramRemixTool.handler
  * );
  * ```
  */
-export const ideogramGenerateTool = {
+export const ideogramRemixTool = {
   name: TOOL_NAME,
   description: TOOL_DESCRIPTION,
   schema: TOOL_SCHEMA,
-  handler: ideogramGenerate,
+  handler: ideogramRemix,
 } as const;
 
 /**
  * Type for the tool schema shape (for MCP SDK compatibility)
  */
-export type GenerateToolSchema = z.infer<typeof GenerateInputSchema>;
+export type RemixToolSchema = z.infer<typeof RemixInputSchema>;

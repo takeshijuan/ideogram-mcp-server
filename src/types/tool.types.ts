@@ -71,6 +71,11 @@ export const StyleTypeSchema = z.enum([
 ]);
 
 /**
+ * Style type for V3 endpoints (no RENDER_3D or ANIME)
+ */
+export const StyleTypeV3Schema = z.enum(['AUTO', 'GENERAL', 'REALISTIC', 'DESIGN', 'FICTION']);
+
+/**
  * Model versions for legacy endpoints.
  */
 export const ModelSchema = z.enum(['V_2', 'V_2_TURBO']);
@@ -136,6 +141,12 @@ export const GenerateInputSchema = z.object({
   /** Style type for the image */
   style_type: StyleTypeSchema.optional().default('AUTO'),
 
+  /** Character reference images for maintaining character consistency across generations */
+  character_reference_images: z
+    .array(z.string().min(1, 'Image reference is required'))
+    .max(5, 'Maximum 5 character reference images')
+    .optional(),
+
   /** Whether to save generated images locally */
   save_locally: z.boolean().optional().default(true),
 });
@@ -151,7 +162,7 @@ export const GenerateAsyncInputSchema = GenerateInputSchema.extend({
 
 /**
  * Input schema for ideogram_edit tool.
- * Supports inpainting (mask-based editing) and outpainting (image expansion).
+ * Uses V3 API for mask-based inpainting with rendering speed control.
  */
 export const EditInputSchema = z.object({
   /** Text prompt describing the desired changes */
@@ -165,12 +176,9 @@ export const EditInputSchema = z.object({
 
   /**
    * Mask image for inpainting: black=edit, white=preserve
-   * REQUIRED for inpainting
+   * REQUIRED for all edit operations
    */
   mask: z.string().min(1, 'Mask is required'),
-
-  /** Model to use for editing (V_2 or V_2_TURBO) */
-  model: ModelSchema.optional().default('V_2'),
 
   /** Number of images to generate (1-8) */
   num_images: z
@@ -189,11 +197,20 @@ export const EditInputSchema = z.object({
     .max(2147483647, 'Seed must be at most 2147483647')
     .optional(),
 
+  /** Rendering speed/quality tradeoff */
+  rendering_speed: RenderingSpeedSchema.optional().default('DEFAULT'),
+
   /** Magic prompt enhancement option */
   magic_prompt: MagicPromptSchema.optional().default('AUTO'),
 
-  /** Style type for the image */
-  style_type: StyleTypeSchema.optional().default('AUTO'),
+  /** Style type for the image (V3 subset) */
+  style_type: StyleTypeV3Schema.optional().default('AUTO'),
+
+  /** Character reference images for maintaining character consistency */
+  character_reference_images: z
+    .array(z.string().min(1, 'Image reference is required'))
+    .max(5, 'Maximum 5 character reference images')
+    .optional(),
 
   /** Whether to save generated images locally */
   save_locally: z.boolean().optional().default(true),
@@ -218,6 +235,228 @@ export const CancelPredictionInputSchema = z.object({
 });
 
 // =============================================================================
+// V3 Tool Shared Schema Components
+// =============================================================================
+
+/**
+ * Describe model version options.
+ */
+export const DescribeModelVersionSchema = z.enum(['V_2', 'V_3']);
+
+// =============================================================================
+// New Tool Input Schemas
+// =============================================================================
+
+/**
+ * Input schema for ideogram_describe tool.
+ * Generates text descriptions from images.
+ */
+export const DescribeInputSchema = z.object({
+  /** Source image: URL, file path, or base64 data URL */
+  image: z.string().min(1, 'Image is required'),
+
+  /** Model version to use for description */
+  describe_model_version: DescribeModelVersionSchema.optional().default('V_3'),
+});
+
+/**
+ * Input schema for ideogram_upscale tool.
+ * Upscales images with optional prompt guidance.
+ */
+export const UpscaleInputSchema = z.object({
+  /** Source image: URL, file path, or base64 data URL */
+  image: z.string().min(1, 'Image is required'),
+
+  /** Optional guidance text for upscaling */
+  prompt: z.string().max(10000, 'Prompt must be 10000 characters or less').optional(),
+
+  /** Similarity to original (0-100) */
+  resemblance: z
+    .number()
+    .int('Resemblance must be an integer')
+    .min(0, 'Resemblance must be at least 0')
+    .max(100, 'Resemblance must be at most 100')
+    .optional()
+    .default(50),
+
+  /** Detail enhancement level (0-100) */
+  detail: z
+    .number()
+    .int('Detail must be an integer')
+    .min(0, 'Detail must be at least 0')
+    .max(100, 'Detail must be at most 100')
+    .optional()
+    .default(50),
+
+  /** Magic prompt enhancement option */
+  magic_prompt: MagicPromptSchema.optional(),
+
+  /** Number of images to generate (1-8) */
+  num_images: z
+    .number()
+    .int('Number of images must be an integer')
+    .min(1, 'Must generate at least 1 image')
+    .max(8, 'Cannot generate more than 8 images')
+    .optional()
+    .default(1),
+
+  /** Random seed for reproducible generation (0-2147483647) */
+  seed: z
+    .number()
+    .int('Seed must be an integer')
+    .min(0, 'Seed must be non-negative')
+    .max(2147483647, 'Seed must be at most 2147483647')
+    .optional(),
+
+  /** Whether to save generated images locally */
+  save_locally: z.boolean().optional().default(true),
+});
+
+/**
+ * Input schema for ideogram_remix tool.
+ * Remixes existing images based on a new prompt.
+ */
+export const RemixInputSchema = z.object({
+  /** Source image: URL, file path, or base64 data URL */
+  image: z.string().min(1, 'Image is required'),
+
+  /** Text prompt describing the desired remix */
+  prompt: z
+    .string()
+    .min(1, 'Prompt is required')
+    .max(10000, 'Prompt must be 10000 characters or less'),
+
+  /** How much influence the original image has (0-100) */
+  image_weight: z
+    .number()
+    .int('Image weight must be an integer')
+    .min(0, 'Image weight must be at least 0')
+    .max(100, 'Image weight must be at most 100')
+    .optional()
+    .default(50),
+
+  /** Negative prompt to guide what not to include */
+  negative_prompt: z
+    .string()
+    .max(10000, 'Negative prompt must be 10000 characters or less')
+    .optional(),
+
+  /** Aspect ratio for the remixed image */
+  aspect_ratio: AspectRatioSchema.optional(),
+
+  /** Number of images to generate (1-8) */
+  num_images: z
+    .number()
+    .int('Number of images must be an integer')
+    .min(1, 'Must generate at least 1 image')
+    .max(8, 'Cannot generate more than 8 images')
+    .optional()
+    .default(1),
+
+  /** Random seed for reproducible generation (0-2147483647) */
+  seed: z
+    .number()
+    .int('Seed must be an integer')
+    .min(0, 'Seed must be non-negative')
+    .max(2147483647, 'Seed must be at most 2147483647')
+    .optional(),
+
+  /** Rendering speed/quality tradeoff */
+  rendering_speed: RenderingSpeedSchema.optional().default('DEFAULT'),
+
+  /** Magic prompt enhancement option */
+  magic_prompt: MagicPromptSchema.optional().default('AUTO'),
+
+  /** Style type for the image (V3 subset) */
+  style_type: StyleTypeV3Schema.optional(),
+
+  /** Character reference images for maintaining character consistency across generations */
+  character_reference_images: z
+    .array(z.string().min(1, 'Image reference is required'))
+    .max(5, 'Maximum 5 character reference images')
+    .optional(),
+
+  /** Whether to save generated images locally */
+  save_locally: z.boolean().optional().default(true),
+});
+
+/**
+ * Input schema for ideogram_reframe tool.
+ * Extends images to new resolutions via intelligent outpainting.
+ */
+export const ReframeInputSchema = z.object({
+  /** Source image: URL, file path, or base64 data URL */
+  image: z.string().min(1, 'Image is required'),
+
+  /** Target resolution (e.g. "1024x768"). Required. */
+  resolution: z.string().min(1, 'Resolution is required'),
+
+  /** Number of images to generate (1-8) */
+  num_images: z
+    .number()
+    .int('Number of images must be an integer')
+    .min(1, 'Must generate at least 1 image')
+    .max(8, 'Cannot generate more than 8 images')
+    .optional()
+    .default(1),
+
+  /** Random seed for reproducible generation (0-2147483647) */
+  seed: z
+    .number()
+    .int('Seed must be an integer')
+    .min(0, 'Seed must be non-negative')
+    .max(2147483647, 'Seed must be at most 2147483647')
+    .optional(),
+
+  /** Rendering speed/quality tradeoff */
+  rendering_speed: RenderingSpeedSchema.optional().default('DEFAULT'),
+
+  /** Whether to save generated images locally */
+  save_locally: z.boolean().optional().default(true),
+});
+
+/**
+ * Input schema for ideogram_replace_background tool.
+ * Replaces image backgrounds while preserving foreground.
+ */
+export const ReplaceBackgroundInputSchema = z.object({
+  /** Source image: URL, file path, or base64 data URL */
+  image: z.string().min(1, 'Image is required'),
+
+  /** Text prompt describing the desired new background */
+  prompt: z
+    .string()
+    .min(1, 'Prompt is required')
+    .max(10000, 'Prompt must be 10000 characters or less'),
+
+  /** Magic prompt enhancement option */
+  magic_prompt: MagicPromptSchema.optional().default('AUTO'),
+
+  /** Number of images to generate (1-8) */
+  num_images: z
+    .number()
+    .int('Number of images must be an integer')
+    .min(1, 'Must generate at least 1 image')
+    .max(8, 'Cannot generate more than 8 images')
+    .optional()
+    .default(1),
+
+  /** Random seed for reproducible generation (0-2147483647) */
+  seed: z
+    .number()
+    .int('Seed must be an integer')
+    .min(0, 'Seed must be non-negative')
+    .max(2147483647, 'Seed must be at most 2147483647')
+    .optional(),
+
+  /** Rendering speed/quality tradeoff */
+  rendering_speed: RenderingSpeedSchema.optional().default('DEFAULT'),
+
+  /** Whether to save generated images locally */
+  save_locally: z.boolean().optional().default(true),
+});
+
+// =============================================================================
 // Tool Input Types (inferred from schemas)
 // =============================================================================
 
@@ -226,6 +465,11 @@ export type GenerateAsyncInput = z.infer<typeof GenerateAsyncInputSchema>;
 export type EditInput = z.infer<typeof EditInputSchema>;
 export type GetPredictionInput = z.infer<typeof GetPredictionInputSchema>;
 export type CancelPredictionInput = z.infer<typeof CancelPredictionInputSchema>;
+export type DescribeInput = z.infer<typeof DescribeInputSchema>;
+export type UpscaleInput = z.infer<typeof UpscaleInputSchema>;
+export type RemixInput = z.infer<typeof RemixInputSchema>;
+export type ReframeInput = z.infer<typeof ReframeInputSchema>;
+export type ReplaceBackgroundInput = z.infer<typeof ReplaceBackgroundInputSchema>;
 
 // =============================================================================
 // Tool Output Types
@@ -310,6 +554,36 @@ export interface EditOutput {
   /** Number of images generated */
   num_images: number;
 }
+
+/**
+ * Output from ideogram_describe tool
+ */
+export interface DescribeOutput {
+  /** Success indicator */
+  success: true;
+  /** Array of generated descriptions */
+  descriptions: Array<{ text: string }>;
+}
+
+/**
+ * Output from ideogram_upscale tool (same shape as GenerateOutput)
+ */
+export type UpscaleOutput = GenerateOutput;
+
+/**
+ * Output from ideogram_remix tool (same shape as GenerateOutput)
+ */
+export type RemixOutput = GenerateOutput;
+
+/**
+ * Output from ideogram_reframe tool (same shape as GenerateOutput)
+ */
+export type ReframeOutput = GenerateOutput;
+
+/**
+ * Output from ideogram_replace_background tool (same shape as GenerateOutput)
+ */
+export type ReplaceBackgroundOutput = GenerateOutput;
 
 /**
  * Output from ideogram_get_prediction tool when still processing
@@ -448,6 +722,11 @@ export const ToolSchemas = {
   edit: EditInputSchema,
   getPrediction: GetPredictionInputSchema,
   cancelPrediction: CancelPredictionInputSchema,
+  describe: DescribeInputSchema,
+  upscale: UpscaleInputSchema,
+  remix: RemixInputSchema,
+  reframe: ReframeInputSchema,
+  replaceBackground: ReplaceBackgroundInputSchema,
 } as const;
 
 // =============================================================================

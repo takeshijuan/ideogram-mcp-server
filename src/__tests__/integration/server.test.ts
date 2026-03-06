@@ -55,6 +55,11 @@ vi.mock('../../utils/logger.js', () => {
 // Create mock functions for IdeogramClient methods
 const mockGenerate = vi.fn();
 const mockEdit = vi.fn();
+const mockDescribe = vi.fn();
+const mockUpscale = vi.fn();
+const mockRemix = vi.fn();
+const mockReframe = vi.fn();
+const mockReplaceBackground = vi.fn();
 const mockTestConnection = vi.fn();
 const mockGetMaskedApiKey = vi.fn();
 
@@ -63,18 +68,33 @@ vi.mock('../../services/ideogram.client.js', () => ({
   IdeogramClient: vi.fn().mockImplementation(() => ({
     generate: mockGenerate,
     edit: mockEdit,
+    describe: mockDescribe,
+    upscale: mockUpscale,
+    remix: mockRemix,
+    reframe: mockReframe,
+    replaceBackground: mockReplaceBackground,
     testConnection: mockTestConnection,
     getMaskedApiKey: mockGetMaskedApiKey,
   })),
   createIdeogramClient: vi.fn(() => ({
     generate: mockGenerate,
     edit: mockEdit,
+    describe: mockDescribe,
+    upscale: mockUpscale,
+    remix: mockRemix,
+    reframe: mockReframe,
+    replaceBackground: mockReplaceBackground,
     testConnection: mockTestConnection,
     getMaskedApiKey: mockGetMaskedApiKey,
   })),
   createClientWithApiKey: vi.fn(() => ({
     generate: mockGenerate,
     edit: mockEdit,
+    describe: mockDescribe,
+    upscale: mockUpscale,
+    remix: mockRemix,
+    reframe: mockReframe,
+    replaceBackground: mockReplaceBackground,
     testConnection: mockTestConnection,
     getMaskedApiKey: mockGetMaskedApiKey,
   })),
@@ -235,17 +255,22 @@ describe('MCP Server Integration', () => {
       expect(server).toBeDefined();
     });
 
-    it('should register all 5 MVP tools', () => {
+    it('should register all 10 tools', () => {
       createServer();
 
       // Verify all tools are registered
-      expect(allTools).toHaveLength(5);
+      expect(allTools).toHaveLength(10);
       const toolNames = getToolNames();
       expect(toolNames).toContain('ideogram_generate');
       expect(toolNames).toContain('ideogram_edit');
       expect(toolNames).toContain('ideogram_generate_async');
       expect(toolNames).toContain('ideogram_get_prediction');
       expect(toolNames).toContain('ideogram_cancel_prediction');
+      expect(toolNames).toContain('ideogram_describe');
+      expect(toolNames).toContain('ideogram_upscale');
+      expect(toolNames).toContain('ideogram_remix');
+      expect(toolNames).toContain('ideogram_reframe');
+      expect(toolNames).toContain('ideogram_replace_background');
     });
 
     it('should use default server info from constants', () => {
@@ -449,7 +474,7 @@ describe('MCP Server Integration', () => {
   // ===========================================================================
 
   describe('Edit Tool Integration', () => {
-    it('should execute inpaint mode successfully', async () => {
+    it('should execute edit with mask successfully', async () => {
       const mockResponse = createMockEditResponse(1);
       mockEdit.mockResolvedValueOnce(mockResponse);
 
@@ -458,29 +483,25 @@ describe('MCP Server Integration', () => {
         prompt: 'Add a tree to the scene',
         image: 'https://example.com/image.png',
         mask: 'https://example.com/mask.png',
-        mode: 'inpaint',
-      })) as { success: true; mode: string; images: Array<{ url: string }> };
+      })) as { success: true; images: Array<{ url: string }> };
 
       expect(result.success).toBe(true);
-      expect(result.mode).toBe('inpaint');
       expect(result.images).toHaveLength(1);
     });
 
-    it('should execute outpaint mode successfully', async () => {
+    it('should execute edit with rendering_speed successfully', async () => {
       const mockResponse = createMockEditResponse(1);
       mockEdit.mockResolvedValueOnce(mockResponse);
 
       const editTool = getToolByName('ideogram_edit');
       const result = (await editTool!.handler({
-        prompt: 'Expand the scene',
+        prompt: 'Edit the scene',
         image: 'https://example.com/image.png',
-        mode: 'outpaint',
-        expand_directions: ['left', 'right'],
-        expand_pixels: 200,
-      })) as { success: true; mode: string };
+        mask: 'https://example.com/mask.png',
+        rendering_speed: 'QUALITY',
+      })) as { success: true };
 
       expect(result.success).toBe(true);
-      expect(result.mode).toBe('outpaint');
     });
 
     it('should include cost tracking for edit operations', async () => {
@@ -691,7 +712,7 @@ describe('MCP Server Integration', () => {
       expect(result.num_images).toBe(4);
     });
 
-    it('should accept valid edit input with inpaint mode', async () => {
+    it('should accept valid edit input with mask', async () => {
       const mockResponse = createMockEditResponse();
       mockEdit.mockResolvedValueOnce(mockResponse);
 
@@ -700,23 +721,21 @@ describe('MCP Server Integration', () => {
         prompt: 'Add something',
         image: 'https://example.com/image.png',
         mask: 'https://example.com/mask.png',
-        mode: 'inpaint',
       })) as { success: boolean };
 
       expect(result.success).toBe(true);
     });
 
-    it('should accept valid edit input with outpaint mode', async () => {
+    it('should accept valid edit input with rendering_speed', async () => {
       const mockResponse = createMockEditResponse();
       mockEdit.mockResolvedValueOnce(mockResponse);
 
       const editTool = getToolByName('ideogram_edit');
       const result = (await editTool!.handler({
-        prompt: 'Expand the image',
+        prompt: 'Edit the image',
         image: 'https://example.com/image.png',
-        mode: 'outpaint',
-        expand_directions: ['left', 'right', 'up', 'down'],
-        expand_pixels: 500,
+        mask: 'https://example.com/mask.png',
+        rendering_speed: 'TURBO',
       })) as { success: boolean };
 
       expect(result.success).toBe(true);
@@ -932,7 +951,7 @@ describe('MCP Server Integration', () => {
       }
     });
 
-    it('should return edit results with mode information', async () => {
+    it('should return edit results with image data', async () => {
       const mockResponse = createMockEditResponse(1);
       mockEdit.mockResolvedValueOnce(mockResponse);
 
@@ -940,16 +959,13 @@ describe('MCP Server Integration', () => {
       const result = (await editTool!.handler({
         prompt: 'Edit this',
         image: 'https://example.com/image.png',
-        mode: 'inpaint',
         mask: 'https://example.com/mask.png',
       })) as {
         success: true;
-        mode: string;
         images: Array<{ url: string }>;
       };
 
       expect(result.success).toBe(true);
-      expect(result.mode).toBe('inpaint');
       expect(result.images.length).toBeGreaterThan(0);
     });
   });

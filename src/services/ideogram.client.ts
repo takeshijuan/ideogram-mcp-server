@@ -27,10 +27,10 @@ import type {
   GenerateRequest,
   GenerateResponse,
   EditResponse,
+  DescribeResponse,
   RenderingSpeed,
   AspectRatio,
   ApiErrorResponse,
-  Model,
   StyleType,
 } from '../types/api.types.js';
 import {
@@ -142,10 +142,16 @@ export interface GenerateParams {
    * @default 'AUTO'
    */
   styleType?: StyleType;
+
+  /**
+   * Character reference images for maintaining character consistency.
+   * Can be URLs, base64 data URLs, or Buffers.
+   */
+  characterReferenceImages?: (string | Buffer)[];
 }
 
 /**
- * Parameters for image editing (inpainting only).
+ * Parameters for image editing (V3 inpainting).
  */
 export interface EditParams {
   /**
@@ -167,12 +173,6 @@ export interface EditParams {
   mask: string | Buffer;
 
   /**
-   * Model to use for editing.
-   * @default 'V_2'
-   */
-  model?: Model;
-
-  /**
    * Number of images to generate (1-8).
    * @default 1
    */
@@ -184,16 +184,151 @@ export interface EditParams {
   seed?: number;
 
   /**
+   * Rendering speed/quality tradeoff.
+   * @default 'DEFAULT'
+   */
+  renderingSpeed?: RenderingSpeed;
+
+  /**
    * Magic prompt enhancement option.
    * @default 'AUTO'
    */
   magicPrompt?: 'AUTO' | 'ON' | 'OFF';
 
   /**
-   * Style type for the image.
+   * Style type for the image (V3 subset).
    * @default 'AUTO'
    */
-  styleType?: 'AUTO' | 'GENERAL' | 'REALISTIC' | 'DESIGN' | 'FICTION' | 'RENDER_3D' | 'ANIME';
+  styleType?: 'AUTO' | 'GENERAL' | 'REALISTIC' | 'DESIGN' | 'FICTION';
+
+  /**
+   * Character reference images for maintaining character consistency.
+   * Can be URLs, base64 data URLs, or Buffers.
+   */
+  characterReferenceImages?: (string | Buffer)[];
+}
+
+/**
+ * Parameters for image description.
+ */
+export interface DescribeParams {
+  /**
+   * The image to describe.
+   * Can be a URL, base64 data URL, or Buffer.
+   */
+  image: string | Buffer;
+
+  /**
+   * Model version for description.
+   * @default 'V_3'
+   */
+  describeModelVersion?: 'V_2' | 'V_3';
+}
+
+/**
+ * Parameters for image upscaling.
+ */
+export interface UpscaleParams {
+  /**
+   * The image to upscale.
+   * Can be a URL, base64 data URL, or Buffer.
+   */
+  image: string | Buffer;
+
+  /**
+   * Optional guidance text for upscaling.
+   */
+  prompt?: string;
+
+  /**
+   * Similarity to original (0-100).
+   * @default 50
+   */
+  resemblance?: number;
+
+  /**
+   * Detail enhancement level (0-100).
+   * @default 50
+   */
+  detail?: number;
+
+  /**
+   * Magic prompt enhancement option.
+   */
+  magicPrompt?: 'AUTO' | 'ON' | 'OFF';
+
+  /**
+   * Number of images to generate (1-8).
+   * @default 1
+   */
+  numImages?: number;
+
+  /**
+   * Random seed for reproducible generation.
+   */
+  seed?: number;
+}
+
+/**
+ * Parameters for image remixing.
+ */
+export interface RemixParams {
+  /** The source image to remix */
+  image: string | Buffer;
+  /** Text prompt describing the desired remix */
+  prompt: string;
+  /** How much influence the original image has (0-100) */
+  imageWeight?: number;
+  /** Negative prompt */
+  negativePrompt?: string;
+  /** Aspect ratio */
+  aspectRatio?: string;
+  /** Number of images (1-8) */
+  numImages?: number;
+  /** Random seed */
+  seed?: number;
+  /** Rendering speed */
+  renderingSpeed?: RenderingSpeed;
+  /** Magic prompt option */
+  magicPrompt?: 'AUTO' | 'ON' | 'OFF';
+  /** Style type (V3 subset) */
+  styleType?: StyleType;
+  /** Character reference images for maintaining character consistency */
+  characterReferenceImages?: (string | Buffer)[];
+}
+
+/**
+ * Parameters for image reframing.
+ */
+export interface ReframeParams {
+  /** The source image to reframe */
+  image: string | Buffer;
+  /** Target resolution (e.g. "1024x768") */
+  resolution: string;
+  /** Number of images (1-8) */
+  numImages?: number;
+  /** Random seed */
+  seed?: number;
+  /** Rendering speed */
+  renderingSpeed?: RenderingSpeed;
+}
+
+/**
+ * Parameters for background replacement.
+ */
+export interface ReplaceBackgroundParams {
+  /** The source image */
+  image: string | Buffer;
+  /** Description of desired new background */
+  prompt: string;
+  /** Magic prompt option */
+  magicPrompt?: 'AUTO' | 'ON' | 'OFF';
+  /** Number of images (1-8) */
+  numImages?: number;
+  /** Random seed */
+  seed?: number;
+  /** Rendering speed */
+  renderingSpeed?: RenderingSpeed;
 }
 
 /**
@@ -317,36 +452,74 @@ export class IdeogramClient {
     const endpoint = API_ENDPOINTS.GENERATE_V3;
     const startTime = Date.now();
 
-    // Build the image_request JSON with only defined fields
-    const imageRequest: GenerateRequest = {
-      prompt: params.prompt,
-      num_images: params.numImages ?? DEFAULTS.NUM_IMAGES,
-      rendering_speed: params.renderingSpeed ?? DEFAULTS.RENDERING_SPEED,
-      magic_prompt: params.magicPrompt ?? DEFAULTS.MAGIC_PROMPT,
-      style_type: params.styleType ?? DEFAULTS.STYLE_TYPE,
-    };
+    // Determine if we need FormData (when character reference images are provided)
+    const hasCharacterRefs =
+      params.characterReferenceImages !== undefined && params.characterReferenceImages.length > 0;
 
-    // Add optional fields only if defined (exactOptionalPropertyTypes compliance)
-    const normalizedAspectRatio = this.normalizeAspectRatio(params.aspectRatio);
-    if (normalizedAspectRatio !== undefined) {
-      imageRequest.aspect_ratio = normalizedAspectRatio;
-    }
-    if (params.negativePrompt !== undefined) {
-      imageRequest.negative_prompt = params.negativePrompt;
-    }
-    if (params.seed !== undefined) {
-      imageRequest.seed = params.seed;
-    }
+    let requestBody: FormData | GenerateRequest;
 
-    // Create JSON request body
-    // V3 API expects fields at top level, not wrapped in image_request
-    const requestBody = imageRequest;
+    if (hasCharacterRefs) {
+      // Build FormData for multipart request with character reference images
+      const formData = new FormData();
+      formData.append('prompt', params.prompt);
+      formData.append('num_images', String(params.numImages ?? DEFAULTS.NUM_IMAGES));
+      formData.append('rendering_speed', params.renderingSpeed ?? DEFAULTS.RENDERING_SPEED);
+      formData.append('magic_prompt', params.magicPrompt ?? DEFAULTS.MAGIC_PROMPT);
+      formData.append('style_type', params.styleType ?? DEFAULTS.STYLE_TYPE);
+
+      const normalizedAspectRatio = this.normalizeAspectRatio(params.aspectRatio);
+      if (normalizedAspectRatio !== undefined) {
+        formData.append('aspect_ratio', normalizedAspectRatio);
+      }
+      if (params.negativePrompt !== undefined) {
+        formData.append('negative_prompt', params.negativePrompt);
+      }
+      if (params.seed !== undefined) {
+        formData.append('seed', String(params.seed));
+      }
+
+      // Append character reference images (guarded by hasCharacterRefs above)
+      if (params.characterReferenceImages !== undefined) {
+        for (const charRef of params.characterReferenceImages) {
+          const prepared = await this.prepareImage(charRef, 'character_reference_images');
+          formData.append('character_reference_images', prepared.data, {
+            contentType: prepared.contentType,
+            filename: prepared.filename,
+          });
+        }
+      }
+
+      requestBody = formData;
+    } else {
+      // Build JSON request body (no character reference images)
+      const imageRequest: GenerateRequest = {
+        prompt: params.prompt,
+        num_images: params.numImages ?? DEFAULTS.NUM_IMAGES,
+        rendering_speed: params.renderingSpeed ?? DEFAULTS.RENDERING_SPEED,
+        magic_prompt: params.magicPrompt ?? DEFAULTS.MAGIC_PROMPT,
+        style_type: params.styleType ?? DEFAULTS.STYLE_TYPE,
+      };
+
+      // Add optional fields only if defined (exactOptionalPropertyTypes compliance)
+      const normalizedAspectRatio = this.normalizeAspectRatio(params.aspectRatio);
+      if (normalizedAspectRatio !== undefined) {
+        imageRequest.aspect_ratio = normalizedAspectRatio;
+      }
+      if (params.negativePrompt !== undefined) {
+        imageRequest.negative_prompt = params.negativePrompt;
+      }
+      if (params.seed !== undefined) {
+        imageRequest.seed = params.seed;
+      }
+
+      requestBody = imageRequest;
+    }
 
     // Log request
     const requestContext: ApiRequestLogContext = {
       endpoint,
       method: 'POST',
-      hasImage: false,
+      hasImage: hasCharacterRefs,
       hasMask: false,
     };
     logApiRequest(this.log, requestContext);
@@ -399,21 +572,29 @@ export class IdeogramClient {
    * ```
    */
   async edit(params: EditParams): Promise<EditResponse> {
-    const endpoint = API_ENDPOINTS.EDIT_LEGACY;
+    const endpoint = API_ENDPOINTS.EDIT_V3;
     const startTime = Date.now();
 
     // Prepare image for upload
     const preparedImage = await this.prepareImage(params.image, 'image');
 
-    // Prepare mask (always required for inpainting)
+    // Prepare mask (always required for V3 edit)
     const preparedMask = await this.prepareImage(params.mask, 'mask');
 
-    // Create multipart form data with flat fields (no JSON wrapper)
+    // Create multipart form data with V3 flat fields
     const formData = new FormData();
+    formData.append('image', preparedImage.data, {
+      contentType: preparedImage.contentType,
+      filename: preparedImage.filename,
+    });
+    formData.append('mask', preparedMask.data, {
+      contentType: preparedMask.contentType,
+      filename: preparedMask.filename,
+    });
     formData.append('prompt', params.prompt);
-    formData.append('model', params.model ?? 'V_2');
-    formData.append('magic_prompt_option', params.magicPrompt ?? DEFAULTS.MAGIC_PROMPT);
     formData.append('num_images', String(params.numImages ?? DEFAULTS.NUM_IMAGES));
+    formData.append('rendering_speed', params.renderingSpeed ?? DEFAULTS.RENDERING_SPEED);
+    formData.append('magic_prompt', params.magicPrompt ?? DEFAULTS.MAGIC_PROMPT);
 
     // Add optional fields only if defined
     if (params.seed !== undefined) {
@@ -423,15 +604,19 @@ export class IdeogramClient {
       formData.append('style_type', params.styleType);
     }
 
-    // Append image and mask
-    formData.append('image_file', preparedImage.data, {
-      contentType: preparedImage.contentType,
-      filename: preparedImage.filename,
-    });
-    formData.append('mask', preparedMask.data, {
-      contentType: preparedMask.contentType,
-      filename: preparedMask.filename,
-    });
+    // Append character reference images if provided
+    if (
+      params.characterReferenceImages !== undefined &&
+      params.characterReferenceImages.length > 0
+    ) {
+      for (const charRef of params.characterReferenceImages) {
+        const prepared = await this.prepareImage(charRef, 'character_reference_images');
+        formData.append('character_reference_images', prepared.data, {
+          contentType: prepared.contentType,
+          filename: prepared.filename,
+        });
+      }
+    }
 
     // Log request
     const requestContext: ApiRequestLogContext = {
@@ -442,13 +627,376 @@ export class IdeogramClient {
     };
     logApiRequest(this.log, requestContext);
 
-    // Use default timeout (legacy API doesn't have rendering speed param)
-    const timeout = TIMEOUTS.LONG_REQUEST_MS;
+    // Use rendering speed-based timeout
+    const timeout = this.getTimeoutForRenderingSpeed(params.renderingSpeed);
 
     // Execute with retry
     const response = await this.executeWithRetry<EditResponse>(endpoint, formData, timeout, 'edit');
 
     // Log response
+    const responseContext: ApiResponseLogContext = {
+      endpoint,
+      statusCode: 200,
+      durationMs: Date.now() - startTime,
+      imageCount: response.data.length,
+    };
+    logApiResponse(this.log, responseContext);
+
+    return response;
+  }
+
+  /**
+   * Describes an image, generating text descriptions.
+   *
+   * @param params - Describe parameters including the image
+   * @returns Promise resolving to text descriptions
+   * @throws {IdeogramMCPError} On validation errors, API errors, or network failures
+   *
+   * @example
+   * ```typescript
+   * const result = await client.describe({
+   *   image: 'https://example.com/photo.jpg',
+   *   describeModelVersion: 'V_3',
+   * });
+   *
+   * console.log(result.descriptions[0].text); // "A sunset over the ocean..."
+   * ```
+   */
+  async describe(params: DescribeParams): Promise<DescribeResponse> {
+    const endpoint = API_ENDPOINTS.DESCRIBE;
+    const startTime = Date.now();
+
+    // Prepare image for upload
+    const preparedImage = await this.prepareImage(params.image, 'image_file');
+
+    // Create multipart form data
+    const formData = new FormData();
+    formData.append('image_file', preparedImage.data, {
+      contentType: preparedImage.contentType,
+      filename: preparedImage.filename,
+    });
+
+    if (params.describeModelVersion !== undefined) {
+      formData.append('describe_model_version', params.describeModelVersion);
+    }
+
+    // Log request
+    const requestContext: ApiRequestLogContext = {
+      endpoint,
+      method: 'POST',
+      hasImage: true,
+      hasMask: false,
+    };
+    logApiRequest(this.log, requestContext);
+
+    // Execute with retry
+    const response = await this.executeWithRetry<DescribeResponse>(
+      endpoint,
+      formData,
+      this.timeoutMs,
+      'describe'
+    );
+
+    // Log response
+    const responseContext: ApiResponseLogContext = {
+      endpoint,
+      statusCode: 200,
+      durationMs: Date.now() - startTime,
+      imageCount: 0,
+    };
+    logApiResponse(this.log, responseContext);
+
+    return response;
+  }
+
+  /**
+   * Upscales an image with optional prompt guidance.
+   *
+   * @param params - Upscale parameters
+   * @returns Promise resolving to the upscaled image response
+   * @throws {IdeogramMCPError} On validation errors, API errors, or network failures
+   *
+   * @example
+   * ```typescript
+   * const result = await client.upscale({
+   *   image: 'https://example.com/photo.jpg',
+   *   prompt: 'High detail landscape',
+   *   resemblance: 70,
+   *   detail: 80,
+   * });
+   *
+   * console.log(result.data[0].url); // Upscaled image URL
+   * ```
+   */
+  async upscale(params: UpscaleParams): Promise<GenerateResponse> {
+    const endpoint = API_ENDPOINTS.UPSCALE;
+    const startTime = Date.now();
+
+    // Prepare image for upload
+    const preparedImage = await this.prepareImage(params.image, 'image_file');
+
+    // Build image_request JSON (legacy endpoint uses JSON wrapper)
+    const imageRequest: Record<string, unknown> = {};
+    if (params.prompt !== undefined) {
+      imageRequest['prompt'] = params.prompt;
+    }
+    imageRequest['resemblance'] = params.resemblance ?? 50;
+    imageRequest['detail'] = params.detail ?? 50;
+    if (params.magicPrompt !== undefined) {
+      imageRequest['magic_prompt_option'] = params.magicPrompt;
+    }
+    imageRequest['num_images'] = params.numImages ?? DEFAULTS.NUM_IMAGES;
+    if (params.seed !== undefined) {
+      imageRequest['seed'] = params.seed;
+    }
+
+    // Create multipart form data
+    const formData = new FormData();
+    formData.append('image_request', JSON.stringify(imageRequest), {
+      contentType: 'application/json',
+    });
+    formData.append('image_file', preparedImage.data, {
+      contentType: preparedImage.contentType,
+      filename: preparedImage.filename,
+    });
+
+    // Log request
+    const requestContext: ApiRequestLogContext = {
+      endpoint,
+      method: 'POST',
+      hasImage: true,
+      hasMask: false,
+    };
+    logApiRequest(this.log, requestContext);
+
+    // Execute with retry
+    const response = await this.executeWithRetry<GenerateResponse>(
+      endpoint,
+      formData,
+      TIMEOUTS.LONG_REQUEST_MS,
+      'upscale'
+    );
+
+    // Log response
+    const responseContext: ApiResponseLogContext = {
+      endpoint,
+      statusCode: 200,
+      durationMs: Date.now() - startTime,
+      imageCount: response.data.length,
+    };
+    logApiResponse(this.log, responseContext);
+
+    return response;
+  }
+
+  /**
+   * Remixes an existing image based on a new prompt.
+   *
+   * @param params - Remix parameters including image and prompt
+   * @returns Promise resolving to the remixed image response
+   * @throws {IdeogramMCPError} On validation errors, API errors, or network failures
+   *
+   * @example
+   * ```typescript
+   * const result = await client.remix({
+   *   image: 'https://example.com/photo.jpg',
+   *   prompt: 'Transform into a watercolor painting',
+   *   imageWeight: 60,
+   * });
+   *
+   * console.log(result.data[0].url); // Remixed image URL
+   * ```
+   */
+  async remix(params: RemixParams): Promise<GenerateResponse> {
+    const endpoint = API_ENDPOINTS.REMIX_V3;
+    const startTime = Date.now();
+
+    // Prepare image for upload
+    const preparedImage = await this.prepareImage(params.image, 'image');
+
+    // Create multipart form data (V3 uses flat fields)
+    const formData = new FormData();
+    formData.append('image', preparedImage.data, {
+      contentType: preparedImage.contentType,
+      filename: preparedImage.filename,
+    });
+    formData.append('prompt', params.prompt);
+    formData.append('image_weight', String(params.imageWeight ?? 50));
+    formData.append('num_images', String(params.numImages ?? DEFAULTS.NUM_IMAGES));
+    formData.append('rendering_speed', params.renderingSpeed ?? DEFAULTS.RENDERING_SPEED);
+    formData.append('magic_prompt', params.magicPrompt ?? DEFAULTS.MAGIC_PROMPT);
+
+    if (params.negativePrompt !== undefined) {
+      formData.append('negative_prompt', params.negativePrompt);
+    }
+    const normalizedAspectRatio = this.normalizeAspectRatio(params.aspectRatio);
+    if (normalizedAspectRatio !== undefined) {
+      formData.append('aspect_ratio', normalizedAspectRatio);
+    }
+    if (params.seed !== undefined) {
+      formData.append('seed', String(params.seed));
+    }
+    if (params.styleType !== undefined) {
+      formData.append('style_type', params.styleType);
+    }
+
+    // Append character reference images if provided
+    if (
+      params.characterReferenceImages !== undefined &&
+      params.characterReferenceImages.length > 0
+    ) {
+      for (const charRef of params.characterReferenceImages) {
+        const prepared = await this.prepareImage(charRef, 'character_reference_images');
+        formData.append('character_reference_images', prepared.data, {
+          contentType: prepared.contentType,
+          filename: prepared.filename,
+        });
+      }
+    }
+
+    const requestContext: ApiRequestLogContext = {
+      endpoint,
+      method: 'POST',
+      hasImage: true,
+      hasMask: false,
+    };
+    logApiRequest(this.log, requestContext);
+
+    const timeout = this.getTimeoutForRenderingSpeed(params.renderingSpeed);
+    const response = await this.executeWithRetry<GenerateResponse>(
+      endpoint,
+      formData,
+      timeout,
+      'remix'
+    );
+
+    const responseContext: ApiResponseLogContext = {
+      endpoint,
+      statusCode: 200,
+      durationMs: Date.now() - startTime,
+      imageCount: response.data.length,
+    };
+    logApiResponse(this.log, responseContext);
+
+    return response;
+  }
+
+  /**
+   * Reframes an image to a new resolution via intelligent outpainting.
+   *
+   * @param params - Reframe parameters including image and target resolution
+   * @returns Promise resolving to the reframed image response
+   * @throws {IdeogramMCPError} On validation errors, API errors, or network failures
+   *
+   * @example
+   * ```typescript
+   * const result = await client.reframe({
+   *   image: 'https://example.com/photo.jpg',
+   *   resolution: 'RESOLUTION_1024_768',
+   * });
+   *
+   * console.log(result.data[0].url); // Reframed image URL
+   * ```
+   */
+  async reframe(params: ReframeParams): Promise<GenerateResponse> {
+    const endpoint = API_ENDPOINTS.REFRAME_V3;
+    const startTime = Date.now();
+
+    const preparedImage = await this.prepareImage(params.image, 'image');
+
+    const formData = new FormData();
+    formData.append('image', preparedImage.data, {
+      contentType: preparedImage.contentType,
+      filename: preparedImage.filename,
+    });
+    formData.append('resolution', params.resolution);
+    formData.append('num_images', String(params.numImages ?? DEFAULTS.NUM_IMAGES));
+    formData.append('rendering_speed', params.renderingSpeed ?? DEFAULTS.RENDERING_SPEED);
+
+    if (params.seed !== undefined) {
+      formData.append('seed', String(params.seed));
+    }
+
+    const requestContext: ApiRequestLogContext = {
+      endpoint,
+      method: 'POST',
+      hasImage: true,
+      hasMask: false,
+    };
+    logApiRequest(this.log, requestContext);
+
+    const timeout = this.getTimeoutForRenderingSpeed(params.renderingSpeed);
+    const response = await this.executeWithRetry<GenerateResponse>(
+      endpoint,
+      formData,
+      timeout,
+      'reframe'
+    );
+
+    const responseContext: ApiResponseLogContext = {
+      endpoint,
+      statusCode: 200,
+      durationMs: Date.now() - startTime,
+      imageCount: response.data.length,
+    };
+    logApiResponse(this.log, responseContext);
+
+    return response;
+  }
+
+  /**
+   * Replaces the background of an image while preserving the foreground subject.
+   *
+   * @param params - Replace background parameters including image and prompt
+   * @returns Promise resolving to the modified image response
+   * @throws {IdeogramMCPError} On validation errors, API errors, or network failures
+   *
+   * @example
+   * ```typescript
+   * const result = await client.replaceBackground({
+   *   image: 'https://example.com/portrait.jpg',
+   *   prompt: 'A tropical beach at sunset',
+   * });
+   *
+   * console.log(result.data[0].url); // Image with replaced background
+   * ```
+   */
+  async replaceBackground(params: ReplaceBackgroundParams): Promise<GenerateResponse> {
+    const endpoint = API_ENDPOINTS.REPLACE_BACKGROUND_V3;
+    const startTime = Date.now();
+
+    const preparedImage = await this.prepareImage(params.image, 'image');
+
+    const formData = new FormData();
+    formData.append('image', preparedImage.data, {
+      contentType: preparedImage.contentType,
+      filename: preparedImage.filename,
+    });
+    formData.append('prompt', params.prompt);
+    formData.append('magic_prompt', params.magicPrompt ?? DEFAULTS.MAGIC_PROMPT);
+    formData.append('num_images', String(params.numImages ?? DEFAULTS.NUM_IMAGES));
+    formData.append('rendering_speed', params.renderingSpeed ?? DEFAULTS.RENDERING_SPEED);
+
+    if (params.seed !== undefined) {
+      formData.append('seed', String(params.seed));
+    }
+
+    const requestContext: ApiRequestLogContext = {
+      endpoint,
+      method: 'POST',
+      hasImage: true,
+      hasMask: false,
+    };
+    logApiRequest(this.log, requestContext);
+
+    const timeout = this.getTimeoutForRenderingSpeed(params.renderingSpeed);
+    const response = await this.executeWithRetry<GenerateResponse>(
+      endpoint,
+      formData,
+      timeout,
+      'replaceBackground'
+    );
+
     const responseContext: ApiResponseLogContext = {
       endpoint,
       statusCode: 200,

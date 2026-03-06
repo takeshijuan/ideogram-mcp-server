@@ -33,6 +33,18 @@ export const API_BASE_URL = 'https://api.ideogram.ai' as const;
 export const API_ENDPOINTS = {
   /** V3 Generate endpoint */
   GENERATE_V3: '/v1/ideogram-v3/generate',
+  /** V3 Remix endpoint */
+  REMIX_V3: '/v1/ideogram-v3/remix',
+  /** V3 Reframe endpoint */
+  REFRAME_V3: '/v1/ideogram-v3/reframe',
+  /** V3 Replace Background endpoint */
+  REPLACE_BACKGROUND_V3: '/v1/ideogram-v3/replace-background',
+  /** V3 Edit endpoint */
+  EDIT_V3: '/v1/ideogram-v3/edit',
+  /** Upscale endpoint */
+  UPSCALE: '/upscale',
+  /** Describe endpoint */
+  DESCRIBE: '/describe',
   /** Legacy Edit endpoint (inpainting only) */
   EDIT_LEGACY: '/edit',
   /** Legacy V2 Generate endpoint */
@@ -192,6 +204,43 @@ export const CREDITS_PER_IMAGE: Record<RenderingSpeed, number> = {
  * Credits cost for edit operations per image.
  */
 export const EDIT_CREDITS_PER_IMAGE: Record<RenderingSpeed, number> = {
+  FLASH: 0.06,
+  TURBO: 0.1,
+  DEFAULT: 0.12,
+  QUALITY: 0.24,
+} as const;
+
+/**
+ * Credit costs per image for upscale operations.
+ */
+export const UPSCALE_CREDITS_PER_IMAGE: Record<'DEFAULT', number> = {
+  DEFAULT: 0.12,
+} as const;
+
+/**
+ * Credit costs per image for remix operations by rendering speed.
+ */
+export const REMIX_CREDITS_PER_IMAGE: Record<RenderingSpeed, number> = {
+  FLASH: 0.04,
+  TURBO: 0.08,
+  DEFAULT: 0.1,
+  QUALITY: 0.2,
+} as const;
+
+/**
+ * Credit costs per image for reframe operations by rendering speed.
+ */
+export const REFRAME_CREDITS_PER_IMAGE: Record<RenderingSpeed, number> = {
+  FLASH: 0.06,
+  TURBO: 0.1,
+  DEFAULT: 0.12,
+  QUALITY: 0.24,
+} as const;
+
+/**
+ * Credit costs per image for replace background operations by rendering speed.
+ */
+export const REPLACE_BG_CREDITS_PER_IMAGE: Record<RenderingSpeed, number> = {
   FLASH: 0.06,
   TURBO: 0.1,
   DEFAULT: 0.12,

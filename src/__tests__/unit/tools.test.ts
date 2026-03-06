@@ -1,12 +1,17 @@
 /**
  * Unit Tests for MCP Tools
  *
- * This file contains comprehensive unit tests for all 5 MCP tools:
+ * This file contains comprehensive unit tests for all 10 MCP tools:
  * - ideogram_generate - Generate images from text prompts
  * - ideogram_edit - Edit images using inpainting/outpainting
  * - ideogram_generate_async - Queue async generation
  * - ideogram_get_prediction - Get prediction status
  * - ideogram_cancel_prediction - Cancel queued predictions
+ * - ideogram_describe - Generate text descriptions from images
+ * - ideogram_upscale - Upscale images to higher resolution
+ * - ideogram_remix - Remix images with new prompts
+ * - ideogram_reframe - Extend images to new resolutions
+ * - ideogram_replace_background - Replace image backgrounds
  *
  * Tests cover:
  * - Successful operations with various parameters
@@ -58,12 +63,22 @@ vi.mock('../../services/ideogram.client.js', () => ({
   IdeogramClient: vi.fn().mockImplementation(() => ({
     generate: vi.fn(),
     edit: vi.fn(),
+    describe: vi.fn(),
+    upscale: vi.fn(),
+    remix: vi.fn(),
+    reframe: vi.fn(),
+    replaceBackground: vi.fn(),
     testConnection: vi.fn(),
     getMaskedApiKey: vi.fn(),
   })),
   createIdeogramClient: vi.fn(() => ({
     generate: vi.fn(),
     edit: vi.fn(),
+    describe: vi.fn(),
+    upscale: vi.fn(),
+    remix: vi.fn(),
+    reframe: vi.fn(),
+    replaceBackground: vi.fn(),
     testConnection: vi.fn(),
     getMaskedApiKey: vi.fn(),
   })),
@@ -99,11 +114,35 @@ vi.mock('../../services/cost.calculator.js', () => ({
     pricingTier: 'DEFAULT',
     numImages: 1,
   })),
+  calculateUpscaleCost: vi.fn(() => ({
+    credits_used: 2,
+    estimated_usd: 0.04,
+    pricing_tier: 'DEFAULT',
+    num_images: 1,
+  })),
+  calculateRemixCost: vi.fn(() => ({
+    credits_used: 1,
+    estimated_usd: 0.02,
+    pricing_tier: 'DEFAULT',
+    num_images: 1,
+  })),
+  calculateReframeCost: vi.fn(() => ({
+    credits_used: 2,
+    estimated_usd: 0.04,
+    pricing_tier: 'DEFAULT',
+    num_images: 1,
+  })),
+  calculateReplaceBgCost: vi.fn(() => ({
+    credits_used: 1,
+    estimated_usd: 0.02,
+    pricing_tier: 'DEFAULT',
+    num_images: 1,
+  })),
   toCostEstimateOutput: vi.fn((cost) => ({
-    credits_used: cost.creditsUsed,
-    estimated_usd: cost.estimatedUsd,
-    pricing_tier: cost.pricingTier,
-    num_images: cost.numImages,
+    credits_used: cost.creditsUsed ?? cost.credits_used ?? 1,
+    estimated_usd: cost.estimatedUsd ?? cost.estimated_usd ?? 0.02,
+    pricing_tier: cost.pricingTier ?? cost.pricing_tier ?? 'DEFAULT',
+    num_images: cost.numImages ?? cost.num_images ?? 1,
   })),
 }));
 
@@ -266,6 +305,56 @@ import {
   ideogramCancelPredictionTool,
 } from '../../tools/cancel-prediction.js';
 
+import {
+  createDescribeHandler,
+  ideogramDescribe,
+  resetDefaultHandler as resetDescribeHandler,
+  TOOL_NAME as DESCRIBE_TOOL_NAME,
+  TOOL_DESCRIPTION as DESCRIBE_TOOL_DESCRIPTION,
+  TOOL_SCHEMA as DESCRIBE_TOOL_SCHEMA,
+  ideogramDescribeTool,
+} from '../../tools/describe.js';
+
+import {
+  createUpscaleHandler,
+  ideogramUpscale,
+  resetDefaultHandler as resetUpscaleHandler,
+  TOOL_NAME as UPSCALE_TOOL_NAME,
+  TOOL_DESCRIPTION as UPSCALE_TOOL_DESCRIPTION,
+  TOOL_SCHEMA as UPSCALE_TOOL_SCHEMA,
+  ideogramUpscaleTool,
+} from '../../tools/upscale.js';
+
+import {
+  createRemixHandler,
+  ideogramRemix,
+  resetDefaultHandler as resetRemixHandler,
+  TOOL_NAME as REMIX_TOOL_NAME,
+  TOOL_DESCRIPTION as REMIX_TOOL_DESCRIPTION,
+  TOOL_SCHEMA as REMIX_TOOL_SCHEMA,
+  ideogramRemixTool,
+} from '../../tools/remix.js';
+
+import {
+  createReframeHandler,
+  ideogramReframe,
+  resetDefaultHandler as resetReframeHandler,
+  TOOL_NAME as REFRAME_TOOL_NAME,
+  TOOL_DESCRIPTION as REFRAME_TOOL_DESCRIPTION,
+  TOOL_SCHEMA as REFRAME_TOOL_SCHEMA,
+  ideogramReframeTool,
+} from '../../tools/reframe.js';
+
+import {
+  createReplaceBackgroundHandler,
+  ideogramReplaceBackground,
+  resetDefaultHandler as resetReplaceBackgroundHandler,
+  TOOL_NAME as REPLACE_BACKGROUND_TOOL_NAME,
+  TOOL_DESCRIPTION as REPLACE_BACKGROUND_TOOL_DESCRIPTION,
+  TOOL_SCHEMA as REPLACE_BACKGROUND_TOOL_SCHEMA,
+  ideogramReplaceBackgroundTool,
+} from '../../tools/replace-background.js';
+
 import { createIdeogramClient } from '../../services/ideogram.client.js';
 import { createStorageService } from '../../services/storage.service.js';
 import { createPredictionStore } from '../../services/prediction.store.js';
@@ -321,6 +410,17 @@ function createMockEditResponse(imageCount = 1) {
     created: new Date().toISOString(),
     data: images,
   };
+}
+
+/**
+ * Creates a mock describe response
+ */
+function createMockDescribeResponse(descriptionCount = 1) {
+  const descriptions = Array.from({ length: descriptionCount }, (_, i) => ({
+    text: `Description ${i}: A detailed image analysis`,
+  }));
+
+  return { descriptions };
 }
 
 /**
@@ -670,7 +770,7 @@ describe('ideogram_edit Tool', () => {
   });
 
   describe('Edit Handler Execution', () => {
-    it('should successfully edit images in inpaint mode', async () => {
+    it('should successfully edit images with mask', async () => {
       const mockClient = {
         edit: vi.fn().mockResolvedValue(createMockEditResponse(1)),
       };
@@ -686,24 +786,21 @@ describe('ideogram_edit Tool', () => {
         prompt: 'Add a balloon',
         image: 'https://example.com/image.png',
         mask: 'https://example.com/mask.png',
-        mode: 'inpaint',
       });
 
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.images).toHaveLength(1);
-        expect(result.mode).toBe('inpaint');
         expect(result.total_cost).toBeDefined();
       }
       expect(mockClient.edit).toHaveBeenCalledWith(
         expect.objectContaining({
-          mode: 'inpaint',
           mask: 'https://example.com/mask.png',
         })
       );
     });
 
-    it('should successfully edit images in outpaint mode', async () => {
+    it('should pass rendering_speed to client', async () => {
       const mockClient = {
         edit: vi.fn().mockResolvedValue(createMockEditResponse(1)),
       };
@@ -716,22 +813,16 @@ describe('ideogram_edit Tool', () => {
       });
 
       const result = await handler({
-        prompt: 'Expand the scene',
+        prompt: 'Edit the scene',
         image: 'https://example.com/image.png',
-        mode: 'outpaint',
-        expand_directions: ['left', 'right'],
-        expand_pixels: 200,
+        mask: 'https://example.com/mask.png',
+        rendering_speed: 'QUALITY',
       });
 
       expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.mode).toBe('outpaint');
-      }
       expect(mockClient.edit).toHaveBeenCalledWith(
         expect.objectContaining({
-          mode: 'outpaint',
-          expandDirections: ['left', 'right'],
-          expandPixels: 200,
+          renderingSpeed: 'QUALITY',
         })
       );
     });
@@ -752,8 +843,6 @@ describe('ideogram_edit Tool', () => {
         prompt: 'Edit this',
         image: 'https://example.com/image.png',
         mask: 'https://example.com/mask.png',
-        mode: 'inpaint',
-        negative_prompt: 'blur',
         num_images: 2,
         seed: 54321,
         rendering_speed: 'TURBO',
@@ -765,7 +854,6 @@ describe('ideogram_edit Tool', () => {
       expect(mockClient.edit).toHaveBeenCalledWith(
         expect.objectContaining({
           prompt: 'Edit this',
-          negativePrompt: 'blur',
           numImages: 2,
           seed: 54321,
           renderingSpeed: 'TURBO',
@@ -790,6 +878,7 @@ describe('ideogram_edit Tool', () => {
       const result = await handler({
         prompt: 'Edit this',
         image: 'https://example.com/image.png',
+        mask: 'https://example.com/mask.png',
       });
 
       expect(result.success).toBe(false);
@@ -798,7 +887,7 @@ describe('ideogram_edit Tool', () => {
       }
     });
 
-    it('should default to inpaint mode when mode is not specified', async () => {
+    it('should use default rendering_speed when not specified', async () => {
       const mockClient = {
         edit: vi.fn().mockResolvedValue(createMockEditResponse(1)),
       };
@@ -813,12 +902,10 @@ describe('ideogram_edit Tool', () => {
       const result = await handler({
         prompt: 'Edit this',
         image: 'https://example.com/image.png',
+        mask: 'https://example.com/mask.png',
       });
 
       expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.mode).toBe('inpaint');
-      }
     });
   });
 });
@@ -1432,21 +1519,21 @@ describe('Tool Input Schema Validation', () => {
   });
 
   describe('Edit Input Schema', () => {
-    it('should validate minimal inpaint input', () => {
+    it('should validate minimal edit input', () => {
       const result = EDIT_TOOL_SCHEMA.safeParse({
         prompt: 'Edit this',
         image: 'https://example.com/image.png',
+        mask: 'https://example.com/mask.png',
       });
       expect(result.success).toBe(true);
     });
 
-    it('should validate outpaint input', () => {
+    it('should validate edit input with rendering_speed', () => {
       const result = EDIT_TOOL_SCHEMA.safeParse({
-        prompt: 'Expand',
+        prompt: 'Edit this',
         image: 'https://example.com/image.png',
-        mode: 'outpaint',
-        expand_directions: ['left', 'right'],
-        expand_pixels: 200,
+        mask: 'https://example.com/mask.png',
+        rendering_speed: 'QUALITY',
       });
       expect(result.success).toBe(true);
     });
@@ -1455,21 +1542,19 @@ describe('Tool Input Schema Validation', () => {
       const result = EDIT_TOOL_SCHEMA.safeParse({
         prompt: 'Edit this',
         image: '',
+        mask: 'https://example.com/mask.png',
       });
       expect(result.success).toBe(false);
     });
 
-    it('should validate expand_directions', () => {
-      const directions = ['left', 'right', 'up', 'down'];
-      for (const dir of directions) {
-        const result = EDIT_TOOL_SCHEMA.safeParse({
-          prompt: 'Expand',
-          image: 'https://example.com/image.png',
-          mode: 'outpaint',
-          expand_directions: [dir],
-        });
-        expect(result.success).toBe(true);
-      }
+    it('should validate character_reference_images', () => {
+      const result = EDIT_TOOL_SCHEMA.safeParse({
+        prompt: 'Edit this',
+        image: 'https://example.com/image.png',
+        mask: 'https://example.com/mask.png',
+        character_reference_images: ['https://example.com/ref1.png'],
+      });
+      expect(result.success).toBe(true);
     });
   });
 
@@ -1535,6 +1620,750 @@ describe('Tool Input Schema Validation', () => {
 // Edge Cases and Integration Tests
 // =============================================================================
 
+// =============================================================================
+// ideogram_describe Tool Tests
+// =============================================================================
+
+describe('ideogram_describe Tool', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetDescribeHandler();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('Tool Constants', () => {
+    it('should export correct tool name', () => {
+      expect(DESCRIBE_TOOL_NAME).toBe('ideogram_describe');
+    });
+
+    it('should export non-empty tool description', () => {
+      expect(DESCRIBE_TOOL_DESCRIPTION).toBeDefined();
+      expect(DESCRIBE_TOOL_DESCRIPTION.length).toBeGreaterThan(50);
+    });
+
+    it('should export valid tool schema', () => {
+      expect(DESCRIBE_TOOL_SCHEMA).toBeDefined();
+    });
+
+    it('should export complete tool definition', () => {
+      expect(ideogramDescribeTool.name).toBe(DESCRIBE_TOOL_NAME);
+      expect(ideogramDescribeTool.description).toBe(DESCRIBE_TOOL_DESCRIPTION);
+      expect(ideogramDescribeTool.schema).toBe(DESCRIBE_TOOL_SCHEMA);
+      expect(ideogramDescribeTool.handler).toBe(ideogramDescribe);
+    });
+  });
+
+  describe('createDescribeHandler', () => {
+    it('should create handler with default options', () => {
+      const handler = createDescribeHandler();
+      expect(handler).toBeInstanceOf(Function);
+    });
+
+    it('should create handler with custom client', () => {
+      const mockClient = {
+        describe: vi.fn().mockResolvedValue(createMockDescribeResponse()),
+      };
+      const handler = createDescribeHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+      });
+      expect(handler).toBeInstanceOf(Function);
+    });
+
+    it('should create handler with custom logger', () => {
+      const mockLogger = createMockLogger();
+      const handler = createDescribeHandler({ logger: mockLogger });
+      expect(handler).toBeInstanceOf(Function);
+    });
+  });
+
+  describe('Describe Handler Execution', () => {
+    it('should successfully describe image with default options', async () => {
+      const mockClient = {
+        describe: vi.fn().mockResolvedValue(createMockDescribeResponse(2)),
+      };
+
+      const handler = createDescribeHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+        logger: createMockLogger(),
+      });
+
+      const result = await handler({
+        image: 'https://example.com/photo.jpg',
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.descriptions).toHaveLength(2);
+        expect(result.descriptions[0]?.text).toContain('Description');
+      }
+      expect(mockClient.describe).toHaveBeenCalledWith(
+        expect.objectContaining({
+          image: 'https://example.com/photo.jpg',
+        })
+      );
+    });
+
+    it('should pass describe_model_version to client', async () => {
+      const mockClient = {
+        describe: vi.fn().mockResolvedValue(createMockDescribeResponse(1)),
+      };
+
+      const handler = createDescribeHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+        logger: createMockLogger(),
+      });
+
+      await handler({
+        image: 'https://example.com/photo.jpg',
+        describe_model_version: 'V_2',
+      });
+
+      expect(mockClient.describe).toHaveBeenCalledWith(
+        expect.objectContaining({
+          image: 'https://example.com/photo.jpg',
+          describeModelVersion: 'V_2',
+        })
+      );
+    });
+
+    it('should handle client errors gracefully', async () => {
+      const mockClient = {
+        describe: vi.fn().mockRejectedValue(new Error('Describe API Error')),
+      };
+
+      const handler = createDescribeHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+        logger: createMockLogger(),
+      });
+
+      const result = await handler({
+        image: 'https://example.com/photo.jpg',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error_code).toBeDefined();
+        expect(result.user_message).toBeDefined();
+      }
+    });
+  });
+});
+
+// =============================================================================
+// ideogram_upscale Tool Tests
+// =============================================================================
+
+describe('ideogram_upscale Tool', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetUpscaleHandler();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('Tool Constants', () => {
+    it('should export correct tool name', () => {
+      expect(UPSCALE_TOOL_NAME).toBe('ideogram_upscale');
+    });
+
+    it('should export non-empty tool description', () => {
+      expect(UPSCALE_TOOL_DESCRIPTION).toBeDefined();
+      expect(UPSCALE_TOOL_DESCRIPTION.length).toBeGreaterThan(50);
+    });
+
+    it('should export valid tool schema', () => {
+      expect(UPSCALE_TOOL_SCHEMA).toBeDefined();
+    });
+
+    it('should export complete tool definition', () => {
+      expect(ideogramUpscaleTool.name).toBe(UPSCALE_TOOL_NAME);
+      expect(ideogramUpscaleTool.description).toBe(UPSCALE_TOOL_DESCRIPTION);
+      expect(ideogramUpscaleTool.schema).toBe(UPSCALE_TOOL_SCHEMA);
+      expect(ideogramUpscaleTool.handler).toBe(ideogramUpscale);
+    });
+  });
+
+  describe('Upscale Handler Execution', () => {
+    it('should successfully upscale image with minimal input', async () => {
+      const mockClient = {
+        upscale: vi.fn().mockResolvedValue(createMockGenerateResponse(1)),
+      };
+      const mockStorage = createMockStorageWithBehavior(false);
+
+      const handler = createUpscaleHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+        storage: mockStorage as unknown as ReturnType<typeof createStorageService>,
+        logger: createMockLogger(),
+      });
+
+      const result = await handler({
+        image: 'https://example.com/photo.jpg',
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.images).toHaveLength(1);
+        expect(result.num_images).toBe(1);
+        expect(result.total_cost).toBeDefined();
+      }
+      expect(mockClient.upscale).toHaveBeenCalledWith(
+        expect.objectContaining({
+          image: 'https://example.com/photo.jpg',
+        })
+      );
+    });
+
+    it('should pass all optional parameters to client', async () => {
+      const mockClient = {
+        upscale: vi.fn().mockResolvedValue(createMockGenerateResponse(2)),
+      };
+      const mockStorage = createMockStorageWithBehavior(false);
+
+      const handler = createUpscaleHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+        storage: mockStorage as unknown as ReturnType<typeof createStorageService>,
+        logger: createMockLogger(),
+      });
+
+      await handler({
+        image: 'https://example.com/photo.jpg',
+        prompt: 'High detail landscape',
+        resemblance: 70,
+        detail: 80,
+        magic_prompt: 'ON',
+        num_images: 2,
+        seed: 12345,
+        save_locally: false,
+      });
+
+      expect(mockClient.upscale).toHaveBeenCalledWith(
+        expect.objectContaining({
+          image: 'https://example.com/photo.jpg',
+          prompt: 'High detail landscape',
+          resemblance: 70,
+          detail: 80,
+          magicPrompt: 'ON',
+          numImages: 2,
+          seed: 12345,
+        })
+      );
+    });
+
+    it('should save images locally when enabled', async () => {
+      const mockResponse = createMockGenerateResponse(1);
+      const mockClient = {
+        upscale: vi.fn().mockResolvedValue(mockResponse),
+      };
+      const mockStorage = createMockStorageWithBehavior(true);
+
+      const handler = createUpscaleHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+        storage: mockStorage as unknown as ReturnType<typeof createStorageService>,
+        logger: createMockLogger(),
+      });
+
+      const result = await handler({
+        image: 'https://example.com/photo.jpg',
+        save_locally: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(mockStorage.downloadImages).toHaveBeenCalled();
+    });
+
+    it('should handle client errors gracefully', async () => {
+      const mockClient = {
+        upscale: vi.fn().mockRejectedValue(new Error('Upscale API Error')),
+      };
+      const mockStorage = createMockStorageWithBehavior(false);
+
+      const handler = createUpscaleHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+        storage: mockStorage as unknown as ReturnType<typeof createStorageService>,
+        logger: createMockLogger(),
+      });
+
+      const result = await handler({
+        image: 'https://example.com/photo.jpg',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error_code).toBeDefined();
+        expect(result.user_message).toBeDefined();
+      }
+    });
+  });
+});
+
+// =============================================================================
+// ideogram_remix Tool Tests
+// =============================================================================
+
+describe('ideogram_remix Tool', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetRemixHandler();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('Tool Constants', () => {
+    it('should export correct tool name', () => {
+      expect(REMIX_TOOL_NAME).toBe('ideogram_remix');
+    });
+
+    it('should export non-empty tool description', () => {
+      expect(REMIX_TOOL_DESCRIPTION).toBeDefined();
+      expect(REMIX_TOOL_DESCRIPTION.length).toBeGreaterThan(50);
+    });
+
+    it('should export valid tool schema', () => {
+      expect(REMIX_TOOL_SCHEMA).toBeDefined();
+    });
+
+    it('should export complete tool definition', () => {
+      expect(ideogramRemixTool.name).toBe(REMIX_TOOL_NAME);
+      expect(ideogramRemixTool.description).toBe(REMIX_TOOL_DESCRIPTION);
+      expect(ideogramRemixTool.schema).toBe(REMIX_TOOL_SCHEMA);
+      expect(ideogramRemixTool.handler).toBe(ideogramRemix);
+    });
+  });
+
+  describe('Remix Handler Execution', () => {
+    it('should successfully remix image with minimal input', async () => {
+      const mockClient = {
+        remix: vi.fn().mockResolvedValue(createMockGenerateResponse(1)),
+      };
+      const mockStorage = createMockStorageWithBehavior(false);
+
+      const handler = createRemixHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+        storage: mockStorage as unknown as ReturnType<typeof createStorageService>,
+        logger: createMockLogger(),
+      });
+
+      const result = await handler({
+        image: 'https://example.com/photo.jpg',
+        prompt: 'Transform into watercolor',
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.images).toHaveLength(1);
+        expect(result.num_images).toBe(1);
+        expect(result.total_cost).toBeDefined();
+      }
+      expect(mockClient.remix).toHaveBeenCalledWith(
+        expect.objectContaining({
+          image: 'https://example.com/photo.jpg',
+          prompt: 'Transform into watercolor',
+        })
+      );
+    });
+
+    it('should pass all optional parameters to client', async () => {
+      const mockClient = {
+        remix: vi.fn().mockResolvedValue(createMockGenerateResponse(4)),
+      };
+      const mockStorage = createMockStorageWithBehavior(false);
+
+      const handler = createRemixHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+        storage: mockStorage as unknown as ReturnType<typeof createStorageService>,
+        logger: createMockLogger(),
+      });
+
+      await handler({
+        image: 'https://example.com/photo.jpg',
+        prompt: 'Cyberpunk style',
+        image_weight: 60,
+        negative_prompt: 'blur',
+        aspect_ratio: '16x9',
+        num_images: 4,
+        seed: 42,
+        rendering_speed: 'QUALITY',
+        magic_prompt: 'ON',
+        style_type: 'FICTION',
+        save_locally: false,
+      });
+
+      expect(mockClient.remix).toHaveBeenCalledWith(
+        expect.objectContaining({
+          image: 'https://example.com/photo.jpg',
+          prompt: 'Cyberpunk style',
+          imageWeight: 60,
+          negativePrompt: 'blur',
+          aspectRatio: '16x9',
+          numImages: 4,
+          seed: 42,
+          renderingSpeed: 'QUALITY',
+          magicPrompt: 'ON',
+          styleType: 'FICTION',
+        })
+      );
+    });
+
+    it('should save images locally when enabled', async () => {
+      const mockResponse = createMockGenerateResponse(1);
+      const mockClient = {
+        remix: vi.fn().mockResolvedValue(mockResponse),
+      };
+      const mockStorage = createMockStorageWithBehavior(true);
+
+      const handler = createRemixHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+        storage: mockStorage as unknown as ReturnType<typeof createStorageService>,
+        logger: createMockLogger(),
+      });
+
+      const result = await handler({
+        image: 'https://example.com/photo.jpg',
+        prompt: 'Remix this',
+        save_locally: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(mockStorage.downloadImages).toHaveBeenCalled();
+    });
+
+    it('should handle client errors gracefully', async () => {
+      const mockClient = {
+        remix: vi.fn().mockRejectedValue(new Error('Remix API Error')),
+      };
+      const mockStorage = createMockStorageWithBehavior(false);
+
+      const handler = createRemixHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+        storage: mockStorage as unknown as ReturnType<typeof createStorageService>,
+        logger: createMockLogger(),
+      });
+
+      const result = await handler({
+        image: 'https://example.com/photo.jpg',
+        prompt: 'Remix this',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error_code).toBeDefined();
+        expect(result.user_message).toBeDefined();
+      }
+    });
+  });
+});
+
+// =============================================================================
+// ideogram_reframe Tool Tests
+// =============================================================================
+
+describe('ideogram_reframe Tool', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetReframeHandler();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('Tool Constants', () => {
+    it('should export correct tool name', () => {
+      expect(REFRAME_TOOL_NAME).toBe('ideogram_reframe');
+    });
+
+    it('should export non-empty tool description', () => {
+      expect(REFRAME_TOOL_DESCRIPTION).toBeDefined();
+      expect(REFRAME_TOOL_DESCRIPTION.length).toBeGreaterThan(50);
+    });
+
+    it('should export valid tool schema', () => {
+      expect(REFRAME_TOOL_SCHEMA).toBeDefined();
+    });
+
+    it('should export complete tool definition', () => {
+      expect(ideogramReframeTool.name).toBe(REFRAME_TOOL_NAME);
+      expect(ideogramReframeTool.description).toBe(REFRAME_TOOL_DESCRIPTION);
+      expect(ideogramReframeTool.schema).toBe(REFRAME_TOOL_SCHEMA);
+      expect(ideogramReframeTool.handler).toBe(ideogramReframe);
+    });
+  });
+
+  describe('Reframe Handler Execution', () => {
+    it('should successfully reframe image with minimal input', async () => {
+      const mockClient = {
+        reframe: vi.fn().mockResolvedValue(createMockGenerateResponse(1)),
+      };
+      const mockStorage = createMockStorageWithBehavior(false);
+
+      const handler = createReframeHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+        storage: mockStorage as unknown as ReturnType<typeof createStorageService>,
+        logger: createMockLogger(),
+      });
+
+      const result = await handler({
+        image: 'https://example.com/photo.jpg',
+        resolution: 'RESOLUTION_1024_768',
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.images).toHaveLength(1);
+        expect(result.num_images).toBe(1);
+        expect(result.total_cost).toBeDefined();
+      }
+      expect(mockClient.reframe).toHaveBeenCalledWith(
+        expect.objectContaining({
+          image: 'https://example.com/photo.jpg',
+          resolution: 'RESOLUTION_1024_768',
+        })
+      );
+    });
+
+    it('should pass all optional parameters to client', async () => {
+      const mockClient = {
+        reframe: vi.fn().mockResolvedValue(createMockGenerateResponse(3)),
+      };
+      const mockStorage = createMockStorageWithBehavior(false);
+
+      const handler = createReframeHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+        storage: mockStorage as unknown as ReturnType<typeof createStorageService>,
+        logger: createMockLogger(),
+      });
+
+      await handler({
+        image: 'https://example.com/photo.jpg',
+        resolution: 'RESOLUTION_1920_1080',
+        num_images: 3,
+        seed: 99999,
+        rendering_speed: 'QUALITY',
+        save_locally: false,
+      });
+
+      expect(mockClient.reframe).toHaveBeenCalledWith(
+        expect.objectContaining({
+          image: 'https://example.com/photo.jpg',
+          resolution: 'RESOLUTION_1920_1080',
+          numImages: 3,
+          seed: 99999,
+          renderingSpeed: 'QUALITY',
+        })
+      );
+    });
+
+    it('should save images locally when enabled', async () => {
+      const mockResponse = createMockGenerateResponse(1);
+      const mockClient = {
+        reframe: vi.fn().mockResolvedValue(mockResponse),
+      };
+      const mockStorage = createMockStorageWithBehavior(true);
+
+      const handler = createReframeHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+        storage: mockStorage as unknown as ReturnType<typeof createStorageService>,
+        logger: createMockLogger(),
+      });
+
+      const result = await handler({
+        image: 'https://example.com/photo.jpg',
+        resolution: 'RESOLUTION_1024_768',
+        save_locally: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(mockStorage.downloadImages).toHaveBeenCalled();
+    });
+
+    it('should handle client errors gracefully', async () => {
+      const mockClient = {
+        reframe: vi.fn().mockRejectedValue(new Error('Reframe API Error')),
+      };
+      const mockStorage = createMockStorageWithBehavior(false);
+
+      const handler = createReframeHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+        storage: mockStorage as unknown as ReturnType<typeof createStorageService>,
+        logger: createMockLogger(),
+      });
+
+      const result = await handler({
+        image: 'https://example.com/photo.jpg',
+        resolution: 'RESOLUTION_1024_768',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error_code).toBeDefined();
+        expect(result.user_message).toBeDefined();
+      }
+    });
+  });
+});
+
+// =============================================================================
+// ideogram_replace_background Tool Tests
+// =============================================================================
+
+describe('ideogram_replace_background Tool', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetReplaceBackgroundHandler();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('Tool Constants', () => {
+    it('should export correct tool name', () => {
+      expect(REPLACE_BACKGROUND_TOOL_NAME).toBe('ideogram_replace_background');
+    });
+
+    it('should export non-empty tool description', () => {
+      expect(REPLACE_BACKGROUND_TOOL_DESCRIPTION).toBeDefined();
+      expect(REPLACE_BACKGROUND_TOOL_DESCRIPTION.length).toBeGreaterThan(50);
+    });
+
+    it('should export valid tool schema', () => {
+      expect(REPLACE_BACKGROUND_TOOL_SCHEMA).toBeDefined();
+    });
+
+    it('should export complete tool definition', () => {
+      expect(ideogramReplaceBackgroundTool.name).toBe(REPLACE_BACKGROUND_TOOL_NAME);
+      expect(ideogramReplaceBackgroundTool.description).toBe(REPLACE_BACKGROUND_TOOL_DESCRIPTION);
+      expect(ideogramReplaceBackgroundTool.schema).toBe(REPLACE_BACKGROUND_TOOL_SCHEMA);
+      expect(ideogramReplaceBackgroundTool.handler).toBe(ideogramReplaceBackground);
+    });
+  });
+
+  describe('Replace Background Handler Execution', () => {
+    it('should successfully replace background with minimal input', async () => {
+      const mockClient = {
+        replaceBackground: vi.fn().mockResolvedValue(createMockGenerateResponse(1)),
+      };
+      const mockStorage = createMockStorageWithBehavior(false);
+
+      const handler = createReplaceBackgroundHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+        storage: mockStorage as unknown as ReturnType<typeof createStorageService>,
+        logger: createMockLogger(),
+      });
+
+      const result = await handler({
+        image: 'https://example.com/portrait.jpg',
+        prompt: 'A tropical beach at sunset',
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.images).toHaveLength(1);
+        expect(result.num_images).toBe(1);
+        expect(result.total_cost).toBeDefined();
+      }
+      expect(mockClient.replaceBackground).toHaveBeenCalledWith(
+        expect.objectContaining({
+          image: 'https://example.com/portrait.jpg',
+          prompt: 'A tropical beach at sunset',
+        })
+      );
+    });
+
+    it('should pass all optional parameters to client', async () => {
+      const mockClient = {
+        replaceBackground: vi.fn().mockResolvedValue(createMockGenerateResponse(4)),
+      };
+      const mockStorage = createMockStorageWithBehavior(false);
+
+      const handler = createReplaceBackgroundHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+        storage: mockStorage as unknown as ReturnType<typeof createStorageService>,
+        logger: createMockLogger(),
+      });
+
+      await handler({
+        image: 'https://example.com/portrait.jpg',
+        prompt: 'Futuristic city',
+        magic_prompt: 'ON',
+        num_images: 4,
+        seed: 77777,
+        rendering_speed: 'QUALITY',
+        save_locally: false,
+      });
+
+      expect(mockClient.replaceBackground).toHaveBeenCalledWith(
+        expect.objectContaining({
+          image: 'https://example.com/portrait.jpg',
+          prompt: 'Futuristic city',
+          magicPrompt: 'ON',
+          numImages: 4,
+          seed: 77777,
+          renderingSpeed: 'QUALITY',
+        })
+      );
+    });
+
+    it('should save images locally when enabled', async () => {
+      const mockResponse = createMockGenerateResponse(1);
+      const mockClient = {
+        replaceBackground: vi.fn().mockResolvedValue(mockResponse),
+      };
+      const mockStorage = createMockStorageWithBehavior(true);
+
+      const handler = createReplaceBackgroundHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+        storage: mockStorage as unknown as ReturnType<typeof createStorageService>,
+        logger: createMockLogger(),
+      });
+
+      const result = await handler({
+        image: 'https://example.com/portrait.jpg',
+        prompt: 'Beach background',
+        save_locally: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(mockStorage.downloadImages).toHaveBeenCalled();
+    });
+
+    it('should handle client errors gracefully', async () => {
+      const mockClient = {
+        replaceBackground: vi.fn().mockRejectedValue(new Error('Replace BG API Error')),
+      };
+      const mockStorage = createMockStorageWithBehavior(false);
+
+      const handler = createReplaceBackgroundHandler({
+        client: mockClient as unknown as ReturnType<typeof createIdeogramClient>,
+        storage: mockStorage as unknown as ReturnType<typeof createStorageService>,
+        logger: createMockLogger(),
+      });
+
+      const result = await handler({
+        image: 'https://example.com/portrait.jpg',
+        prompt: 'Beach background',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error_code).toBeDefined();
+        expect(result.user_message).toBeDefined();
+      }
+    });
+  });
+});
+
+// =============================================================================
+// Schema Validation Tests
+// =============================================================================
+
 describe('Tool Edge Cases', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -1543,6 +2372,11 @@ describe('Tool Edge Cases', () => {
     resetGenerateAsyncHandler();
     resetGetPredictionHandler();
     resetCancelPredictionHandler();
+    resetDescribeHandler();
+    resetUpscaleHandler();
+    resetRemixHandler();
+    resetReframeHandler();
+    resetReplaceBackgroundHandler();
   });
 
   describe('Long prompts', () => {
@@ -1593,33 +2427,33 @@ describe('Tool Edge Cases', () => {
     });
   });
 
-  describe('Expand pixels', () => {
-    it('should accept minimum expand_pixels (1)', () => {
+  describe('Edit rendering_speed', () => {
+    it('should accept FLASH rendering_speed', () => {
       const result = EDIT_TOOL_SCHEMA.safeParse({
-        prompt: 'Expand',
+        prompt: 'Edit this',
         image: 'https://example.com/image.png',
-        mode: 'outpaint',
-        expand_pixels: 1,
+        mask: 'https://example.com/mask.png',
+        rendering_speed: 'FLASH',
       });
       expect(result.success).toBe(true);
     });
 
-    it('should accept maximum expand_pixels (1024)', () => {
+    it('should accept QUALITY rendering_speed', () => {
       const result = EDIT_TOOL_SCHEMA.safeParse({
-        prompt: 'Expand',
+        prompt: 'Edit this',
         image: 'https://example.com/image.png',
-        mode: 'outpaint',
-        expand_pixels: 1024,
+        mask: 'https://example.com/mask.png',
+        rendering_speed: 'QUALITY',
       });
       expect(result.success).toBe(true);
     });
 
-    it('should reject expand_pixels over 1024', () => {
+    it('should reject invalid rendering_speed', () => {
       const result = EDIT_TOOL_SCHEMA.safeParse({
-        prompt: 'Expand',
+        prompt: 'Edit this',
         image: 'https://example.com/image.png',
-        mode: 'outpaint',
-        expand_pixels: 1025,
+        mask: 'https://example.com/mask.png',
+        rendering_speed: 'INVALID',
       });
       expect(result.success).toBe(false);
     });

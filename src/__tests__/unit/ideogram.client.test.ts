@@ -450,7 +450,7 @@ describe('IdeogramClient', () => {
       });
     });
 
-    it('should make POST request to edit endpoint', async () => {
+    it('should make POST request to V3 edit endpoint', async () => {
       const mockResponse = createMockEditResponse();
       mockHttpClient.post.mockResolvedValueOnce({ data: mockResponse });
 
@@ -459,7 +459,6 @@ describe('IdeogramClient', () => {
         prompt: 'Add a tree',
         image: createPngBuffer(),
         mask: createPngBuffer(),
-        mode: 'inpaint',
       });
 
       expect(mockHttpClient.post).toHaveBeenCalledWith(
@@ -482,7 +481,6 @@ describe('IdeogramClient', () => {
         prompt: 'Add a tree',
         image: createPngBuffer(),
         mask: createPngBuffer(),
-        mode: 'inpaint',
         numImages: 2,
       });
 
@@ -490,33 +488,19 @@ describe('IdeogramClient', () => {
       expect(result.data[0]?.url).toContain('edited-image');
     });
 
-    it('should throw error for inpaint mode without mask', async () => {
-      const client = new IdeogramClient({ apiKey: 'test-key' });
-
-      await expect(
-        client.edit({
-          prompt: 'Edit something',
-          image: createPngBuffer(),
-          mode: 'inpaint',
-          // No mask provided
-        })
-      ).rejects.toThrow();
-    });
-
-    it('should allow outpaint mode without mask', async () => {
+    it('should pass rendering_speed to V3 edit', async () => {
       const mockResponse = createMockEditResponse();
       mockHttpClient.post.mockResolvedValueOnce({ data: mockResponse });
 
       const client = new IdeogramClient({ apiKey: 'test-key' });
-      const result = await client.edit({
-        prompt: 'Expand the scene',
+      await client.edit({
+        prompt: 'Edit this',
         image: createPngBuffer(),
-        mode: 'outpaint',
-        expandDirections: ['left', 'right'],
-        expandPixels: 200,
+        mask: createPngBuffer(),
+        renderingSpeed: 'QUALITY',
       });
 
-      expect(result.data).toHaveLength(1);
+      expect(mockHttpClient.post).toHaveBeenCalled();
     });
 
     it('should accept image from URL', async () => {
@@ -528,7 +512,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit this',
         image: 'https://example.com/image.png',
         mask: createPngBuffer(),
-        mode: 'inpaint',
       });
 
       expect(axios.get).toHaveBeenCalledWith(
@@ -552,7 +535,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit this',
         image: dataUrl,
         mask: createPngBuffer(),
-        mode: 'inpaint',
       });
 
       expect(mockHttpClient.post).toHaveBeenCalled();
@@ -566,25 +548,8 @@ describe('IdeogramClient', () => {
           prompt: 'Edit this',
           image: '/invalid/path/image.png', // Not a URL, not base64, not Buffer
           mask: createPngBuffer(),
-          mode: 'inpaint',
         })
       ).rejects.toThrow();
-    });
-
-    it('should include expand directions for outpaint mode', async () => {
-      const mockResponse = createMockEditResponse();
-      mockHttpClient.post.mockResolvedValueOnce({ data: mockResponse });
-
-      const client = new IdeogramClient({ apiKey: 'test-key' });
-      await client.edit({
-        prompt: 'Expand',
-        image: createPngBuffer(),
-        mode: 'outpaint',
-        expandDirections: ['up', 'down'],
-        expandPixels: 150,
-      });
-
-      expect(mockHttpClient.post).toHaveBeenCalled();
     });
   });
 
@@ -602,7 +567,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: createPngBuffer(),
         mask: createPngBuffer(),
-        mode: 'inpaint',
       });
 
       expect(mockHttpClient.post).toHaveBeenCalled();
@@ -617,7 +581,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: createJpegBuffer(),
         mask: createPngBuffer(),
-        mode: 'inpaint',
       });
 
       expect(mockHttpClient.post).toHaveBeenCalled();
@@ -632,7 +595,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: createWebpBuffer(),
         mask: createPngBuffer(),
-        mode: 'inpaint',
       });
 
       expect(mockHttpClient.post).toHaveBeenCalled();
@@ -650,7 +612,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: unknownBuffer,
         mask: createPngBuffer(),
-        mode: 'inpaint',
       });
 
       expect(mockHttpClient.post).toHaveBeenCalled();
@@ -678,7 +639,6 @@ describe('IdeogramClient', () => {
           prompt: 'Edit this',
           image: largeBuffer,
           mask: createPngBuffer(),
-          mode: 'inpaint',
         })
       ).rejects.toThrow();
     });
@@ -695,7 +655,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit this',
         image: validBuffer,
         mask: createPngBuffer(),
-        mode: 'inpaint',
       });
 
       expect(result.data).toBeDefined();
@@ -818,7 +777,6 @@ describe('IdeogramClient', () => {
           prompt: 'Edit',
           image: 'https://example.com/not-found.png',
           mask: createPngBuffer(),
-          mode: 'inpaint',
         })
       ).rejects.toThrow();
     });
@@ -913,7 +871,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: dataUrl,
         mask: createPngBuffer(),
-        mode: 'inpaint',
       });
 
       expect(mockHttpClient.post).toHaveBeenCalled();
@@ -928,7 +885,6 @@ describe('IdeogramClient', () => {
           prompt: 'Edit',
           image: 'data:image/png,notbase64',
           mask: createPngBuffer(),
-          mode: 'inpaint',
         })
       ).rejects.toThrow();
     });
@@ -945,7 +901,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: dataUrl,
         mask: createPngBuffer(),
-        mode: 'inpaint',
       });
 
       expect(mockHttpClient.post).toHaveBeenCalled();
@@ -971,7 +926,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: 'https://example.com/image.png',
         mask: createPngBuffer(),
-        mode: 'inpaint',
       });
 
       expect(axios.get).toHaveBeenCalledWith(
@@ -996,7 +950,6 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: 'http://example.com/image.png',
         mask: createPngBuffer(),
-        mode: 'inpaint',
       });
 
       expect(axios.get).toHaveBeenCalledWith('http://example.com/image.png', expect.anything());
@@ -1017,10 +970,302 @@ describe('IdeogramClient', () => {
         prompt: 'Edit',
         image: 'https://example.com/image',
         mask: createPngBuffer(),
-        mode: 'inpaint',
       });
 
       expect(mockHttpClient.post).toHaveBeenCalled();
+    });
+  });
+
+  // ===========================================================================
+  // describe() Tests
+  // ===========================================================================
+
+  describe('describe', () => {
+    it('should make POST request to describe endpoint', async () => {
+      const mockResponse = { descriptions: [{ text: 'A sunset image' }] };
+      mockHttpClient.post.mockResolvedValueOnce({ data: mockResponse });
+
+      const client = new IdeogramClient({ apiKey: 'test-key' });
+      const result = await client.describe({
+        image: createPngBuffer(),
+      });
+
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        '/describe',
+        expect.anything(),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'Api-Key': 'test-key',
+          }),
+        })
+      );
+      expect(result.descriptions).toHaveLength(1);
+      expect(result.descriptions[0]?.text).toBe('A sunset image');
+    });
+
+    it('should return descriptions from API', async () => {
+      const mockResponse = {
+        descriptions: [{ text: 'First description' }, { text: 'Second description' }],
+      };
+      mockHttpClient.post.mockResolvedValueOnce({ data: mockResponse });
+
+      const client = new IdeogramClient({ apiKey: 'test-key' });
+      const result = await client.describe({
+        image: createPngBuffer(),
+      });
+
+      expect(result.descriptions).toHaveLength(2);
+    });
+
+    it('should handle API errors', async () => {
+      const axiosError = createAxiosError('Bad Request', 400, { message: 'Invalid image' });
+      mockHttpClient.post.mockRejectedValueOnce(axiosError);
+
+      const { withRetry } = await import('../../utils/retry.js');
+      (withRetry as ReturnType<typeof vi.fn>).mockImplementationOnce(async (fn) => {
+        try {
+          return await fn();
+        } catch (e) {
+          throw e;
+        }
+      });
+
+      const client = new IdeogramClient({ apiKey: 'test-key' });
+      await expect(client.describe({ image: createPngBuffer() })).rejects.toThrow();
+    });
+  });
+
+  // ===========================================================================
+  // upscale() Tests
+  // ===========================================================================
+
+  describe('upscale', () => {
+    it('should make POST request to upscale endpoint', async () => {
+      const mockResponse = createMockGenerateResponse();
+      mockHttpClient.post.mockResolvedValueOnce({ data: mockResponse });
+
+      const client = new IdeogramClient({ apiKey: 'test-key' });
+      await client.upscale({
+        image: createPngBuffer(),
+      });
+
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        '/upscale',
+        expect.anything(),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'Api-Key': 'test-key',
+          }),
+        })
+      );
+    });
+
+    it('should return upscaled images', async () => {
+      const mockResponse = createMockGenerateResponse(2);
+      mockHttpClient.post.mockResolvedValueOnce({ data: mockResponse });
+
+      const client = new IdeogramClient({ apiKey: 'test-key' });
+      const result = await client.upscale({
+        image: createPngBuffer(),
+        numImages: 2,
+      });
+
+      expect(result.data).toHaveLength(2);
+    });
+
+    it('should handle API errors', async () => {
+      const axiosError = createAxiosError('Server Error', 500, { message: 'Upscale failed' });
+      mockHttpClient.post.mockRejectedValueOnce(axiosError);
+
+      const { withRetry } = await import('../../utils/retry.js');
+      (withRetry as ReturnType<typeof vi.fn>).mockImplementationOnce(async (fn) => {
+        try {
+          return await fn();
+        } catch (e) {
+          throw e;
+        }
+      });
+
+      const client = new IdeogramClient({ apiKey: 'test-key' });
+      await expect(client.upscale({ image: createPngBuffer() })).rejects.toThrow();
+    });
+  });
+
+  // ===========================================================================
+  // remix() Tests
+  // ===========================================================================
+
+  describe('remix', () => {
+    it('should make POST request to remix V3 endpoint', async () => {
+      const mockResponse = createMockGenerateResponse();
+      mockHttpClient.post.mockResolvedValueOnce({ data: mockResponse });
+
+      const client = new IdeogramClient({ apiKey: 'test-key' });
+      await client.remix({
+        image: createPngBuffer(),
+        prompt: 'Watercolor style',
+      });
+
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        '/v1/ideogram-v3/remix',
+        expect.anything(),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'Api-Key': 'test-key',
+          }),
+        })
+      );
+    });
+
+    it('should return remixed images', async () => {
+      const mockResponse = createMockGenerateResponse(3);
+      mockHttpClient.post.mockResolvedValueOnce({ data: mockResponse });
+
+      const client = new IdeogramClient({ apiKey: 'test-key' });
+      const result = await client.remix({
+        image: createPngBuffer(),
+        prompt: 'Anime style',
+        numImages: 3,
+      });
+
+      expect(result.data).toHaveLength(3);
+    });
+
+    it('should handle API errors', async () => {
+      const axiosError = createAxiosError('Bad Request', 400, { message: 'Invalid params' });
+      mockHttpClient.post.mockRejectedValueOnce(axiosError);
+
+      const { withRetry } = await import('../../utils/retry.js');
+      (withRetry as ReturnType<typeof vi.fn>).mockImplementationOnce(async (fn) => {
+        try {
+          return await fn();
+        } catch (e) {
+          throw e;
+        }
+      });
+
+      const client = new IdeogramClient({ apiKey: 'test-key' });
+      await expect(client.remix({ image: createPngBuffer(), prompt: 'test' })).rejects.toThrow();
+    });
+  });
+
+  // ===========================================================================
+  // reframe() Tests
+  // ===========================================================================
+
+  describe('reframe', () => {
+    it('should make POST request to reframe V3 endpoint', async () => {
+      const mockResponse = createMockGenerateResponse();
+      mockHttpClient.post.mockResolvedValueOnce({ data: mockResponse });
+
+      const client = new IdeogramClient({ apiKey: 'test-key' });
+      await client.reframe({
+        image: createPngBuffer(),
+        resolution: 'RESOLUTION_1024_768',
+      });
+
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        '/v1/ideogram-v3/reframe',
+        expect.anything(),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'Api-Key': 'test-key',
+          }),
+        })
+      );
+    });
+
+    it('should return reframed images', async () => {
+      const mockResponse = createMockGenerateResponse(2);
+      mockHttpClient.post.mockResolvedValueOnce({ data: mockResponse });
+
+      const client = new IdeogramClient({ apiKey: 'test-key' });
+      const result = await client.reframe({
+        image: createPngBuffer(),
+        resolution: 'RESOLUTION_1920_1080',
+        numImages: 2,
+      });
+
+      expect(result.data).toHaveLength(2);
+    });
+
+    it('should handle API errors', async () => {
+      const axiosError = createAxiosError('Server Error', 500, { message: 'Reframe failed' });
+      mockHttpClient.post.mockRejectedValueOnce(axiosError);
+
+      const { withRetry } = await import('../../utils/retry.js');
+      (withRetry as ReturnType<typeof vi.fn>).mockImplementationOnce(async (fn) => {
+        try {
+          return await fn();
+        } catch (e) {
+          throw e;
+        }
+      });
+
+      const client = new IdeogramClient({ apiKey: 'test-key' });
+      await expect(
+        client.reframe({ image: createPngBuffer(), resolution: 'RESOLUTION_1024_768' })
+      ).rejects.toThrow();
+    });
+  });
+
+  // ===========================================================================
+  // replaceBackground() Tests
+  // ===========================================================================
+
+  describe('replaceBackground', () => {
+    it('should make POST request to replace-background V3 endpoint', async () => {
+      const mockResponse = createMockGenerateResponse();
+      mockHttpClient.post.mockResolvedValueOnce({ data: mockResponse });
+
+      const client = new IdeogramClient({ apiKey: 'test-key' });
+      await client.replaceBackground({
+        image: createPngBuffer(),
+        prompt: 'A tropical beach',
+      });
+
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        '/v1/ideogram-v3/replace-background',
+        expect.anything(),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'Api-Key': 'test-key',
+          }),
+        })
+      );
+    });
+
+    it('should return images with replaced background', async () => {
+      const mockResponse = createMockGenerateResponse(4);
+      mockHttpClient.post.mockResolvedValueOnce({ data: mockResponse });
+
+      const client = new IdeogramClient({ apiKey: 'test-key' });
+      const result = await client.replaceBackground({
+        image: createPngBuffer(),
+        prompt: 'Mountain landscape',
+        numImages: 4,
+      });
+
+      expect(result.data).toHaveLength(4);
+    });
+
+    it('should handle API errors', async () => {
+      const axiosError = createAxiosError('Bad Request', 400, { message: 'Invalid image' });
+      mockHttpClient.post.mockRejectedValueOnce(axiosError);
+
+      const { withRetry } = await import('../../utils/retry.js');
+      (withRetry as ReturnType<typeof vi.fn>).mockImplementationOnce(async (fn) => {
+        try {
+          return await fn();
+        } catch (e) {
+          throw e;
+        }
+      });
+
+      const client = new IdeogramClient({ apiKey: 'test-key' });
+      await expect(
+        client.replaceBackground({ image: createPngBuffer(), prompt: 'test' })
+      ).rejects.toThrow();
     });
   });
 });
